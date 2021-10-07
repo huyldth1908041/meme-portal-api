@@ -4,6 +4,7 @@
 
 ## Run at localhost
 `cd meme-portal-api`
+
 `mvn spring-boot:run`
 
 ## Branch name Rules:
