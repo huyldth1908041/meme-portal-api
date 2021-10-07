@@ -17,6 +17,7 @@ public class User {
     private String avatar;
     private String fullName;
     private Date birthDay;
+    private String phone;
     private int gender; // 1 male 0 female
     private double tokenBalance;
     private String displayNameColor;
