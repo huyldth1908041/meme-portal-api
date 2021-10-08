@@ -15,6 +15,7 @@ public class UserDTO {
     private long id;
     private String username;
     private String role;
+    private String avatar;
     private int status;
     private String phone;
     private String fullName;
@@ -38,5 +39,7 @@ public class UserDTO {
         this.tokenBalance = user.getTokenBalance();
         this.birthday = user.getBirthDay();
         this.displayNameColor = user.getDisplayNameColor();
+        this.avatar = user.getAvatar();
+        this.fullName = user.getFullName();
     }
 }
