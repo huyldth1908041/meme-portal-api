@@ -1,5 +1,6 @@
 package com.t1908e.memeportalapi.config;
 
+import com.t1908e.memeportalapi.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
     private final UserDetailsService userDetailsService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final AuthenticationService authenticationService;
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(userDetailsService).passwordEncoder(bCryptPasswordEncoder);
@@ -27,7 +29,9 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         //override default login path
-        com.t1908e.memeportalapi.config.ApiAuthenticationFilter apiAuthenticationFilter = new com.t1908e.memeportalapi.config.ApiAuthenticationFilter(authenticationManagerBean());
+        com.t1908e.memeportalapi.config.ApiAuthenticationFilter apiAuthenticationFilter
+                = new com.t1908e.memeportalapi.config.ApiAuthenticationFilter(
+                        authenticationManagerBean(), authenticationService);
         apiAuthenticationFilter.setFilterProcessesUrl("/api/v1/login");
         http.csrf().disable();
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);

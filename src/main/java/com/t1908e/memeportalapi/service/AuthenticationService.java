@@ -102,4 +102,14 @@ public class AuthenticationService implements UserDetailsService {
         Optional<Account> byUsername = accountRepository.findByUsername(username);
         return byUsername.orElse(null);
     }
+
+    public User getAppUser(String username) {
+        Optional<Account> byUsername = accountRepository.findByUsername(username);
+        if (byUsername.isPresent()) {
+            Account account = byUsername.get();
+            User user = account.getUser();
+            return user;
+        }
+        return null;
+    }
 }

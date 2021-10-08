@@ -3,6 +3,7 @@ package com.t1908e.memeportalapi.config;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.t1908e.memeportalapi.util.JwtUtil;
+import com.t1908e.memeportalapi.util.RESTResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -50,10 +51,12 @@ public class ApiAuthorizationFilter extends OncePerRequestFilter {
             //show error
             System.err.println(ex.getMessage());
             response.setStatus(HttpStatus.FORBIDDEN.value());
-            Map<String, String> errors = new HashMap<>();
-            errors.put("error", ex.getMessage());
+            HashMap<String, Object> errorBody = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.FORBIDDEN.value())
+                    .setMessage(ex.getMessage())
+                    .build();
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            new ObjectMapper().writeValue(response.getOutputStream(), errors);
+            new ObjectMapper().writeValue(response.getOutputStream(), errorBody);
         }
     }
 }

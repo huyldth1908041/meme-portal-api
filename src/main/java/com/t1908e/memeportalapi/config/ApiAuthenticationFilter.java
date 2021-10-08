@@ -5,8 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.t1908e.memeportalapi.dto.CredentialDTO;
 import com.t1908e.memeportalapi.dto.LoginDTO;
-import com.t1908e.memeportalapi.dto.RegisterDTO;
+import com.t1908e.memeportalapi.dto.UserDTO;
+import com.t1908e.memeportalapi.service.AuthenticationService;
 import com.t1908e.memeportalapi.util.JwtUtil;
+import com.t1908e.memeportalapi.util.RESTResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,12 +25,17 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.stream.Collectors;
 
+
 public class ApiAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
     private final AuthenticationManager authenticationManager;
+    private final AuthenticationService authenticationService;
 
-    public ApiAuthenticationFilter(AuthenticationManager authenticationManager) {
+    public ApiAuthenticationFilter(AuthenticationManager authenticationManager, AuthenticationService authenticationService) {
         this.authenticationManager = authenticationManager;
+        this.authenticationService = authenticationService;
     }
+
+
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
@@ -59,8 +67,16 @@ public class ApiAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                 null,
                 request.getRequestURL().toString(),
                 JwtUtil.ONE_DAY * 14);
-        CredentialDTO credential = new CredentialDTO(accessToken, refreshToken);
+        com.t1908e.memeportalapi.entity.User appUser = authenticationService.getAppUser(user.getUsername());
+        CredentialDTO credential = new CredentialDTO(accessToken, refreshToken, new UserDTO(appUser));
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        new ObjectMapper().writeValue(response.getOutputStream(), credential);
+        response.setStatus(HttpStatus.OK.value());
+        new ObjectMapper().writeValue(response.getOutputStream(),
+                new RESTResponse
+                        .Success()
+                        .setStatus(HttpStatus.OK.value())
+                        .setMessage("Login success")
+                        .setData(credential)
+                        .build());
     }
 }

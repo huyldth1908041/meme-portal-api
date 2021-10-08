@@ -5,6 +5,7 @@ import com.t1908e.memeportalapi.dto.CredentialDTO;
 import com.t1908e.memeportalapi.dto.RegisterDTO;
 import com.t1908e.memeportalapi.dto.UserDTO;
 import com.t1908e.memeportalapi.entity.Account;
+import com.t1908e.memeportalapi.entity.User;
 import com.t1908e.memeportalapi.service.AuthenticationService;
 import com.t1908e.memeportalapi.util.JwtUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
@@ -77,7 +78,8 @@ public class AuthenticationController {
                     null,
                     request.getRequestURL().toString(),
                     JwtUtil.ONE_DAY * 14);
-            CredentialDTO credential = new CredentialDTO(accessToken, refreshToken);
+            User appUser = account.getUser();
+            CredentialDTO credential = new CredentialDTO(accessToken, refreshToken, new UserDTO(appUser));
             return ResponseEntity.ok(new RESTResponse
                     .Success()
                     .setMessage("success")
