@@ -33,6 +33,7 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
                 = new com.t1908e.memeportalapi.config.ApiAuthenticationFilter(
                         authenticationManagerBean(), authenticationService);
         apiAuthenticationFilter.setFilterProcessesUrl("/api/v1/login");
+        http.cors().disable();
         http.csrf().disable();
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.authorizeRequests()
