@@ -37,7 +37,8 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
         http.csrf().disable();
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.authorizeRequests()
-                .antMatchers("/api/v1/register**", "/api/v1/login**", "/api/v1/token/refresh**", "/api/v1/users/public**")
+                .antMatchers("/api/v1/register**", "/api/v1/login**", "/api/v1/token/refresh**", "/api/v1/users/public**",
+                        "/api/v1/post/list","/api/v1/test/**")
                 .permitAll();
         //http.authorizeRequests().antMatchers("/api/v1/users/**").hasAnyAuthority("user");
         //add requests path for more role here
