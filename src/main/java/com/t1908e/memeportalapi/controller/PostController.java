@@ -1,11 +1,9 @@
 package com.t1908e.memeportalapi.controller;
 
-import com.t1908e.memeportalapi.dto.PostDTO;
+import com.t1908e.memeportalapi.dto.PostDetailDTO;
 import com.t1908e.memeportalapi.entity.Post;
-import com.t1908e.memeportalapi.repository.PostRepository;
 import com.t1908e.memeportalapi.service.PostService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -13,9 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -37,7 +33,7 @@ public class PostController {
 
             Pageable paging = PageRequest.of(page, size);
 
-            Page<PostDTO> pagePosts;
+            Page<PostDetailDTO> pagePosts;
                 pagePosts = postService.getListPost(paging);
 
             Map<String, Object> response = new HashMap<>();
@@ -52,9 +48,4 @@ public class PostController {
         }
     }
 
-    @RequestMapping(value = "/create",method = RequestMethod.POST)
-
-    public Post createPost(@RequestBody PostDTO postDTO){
-        return postService.create(postDTO);
-    }
 }

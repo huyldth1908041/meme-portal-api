@@ -1,23 +1,16 @@
 package com.t1908e.memeportalapi.controller;
 
-import com.t1908e.memeportalapi.dto.PostDTO;
-import com.t1908e.memeportalapi.entity.Post;
+import com.t1908e.memeportalapi.dto.PostDetailDTO;
 import com.t1908e.memeportalapi.repository.CateroryRepository;
 import com.t1908e.memeportalapi.repository.PostRepository;
 import com.t1908e.memeportalapi.repository.UserRepository;
 import com.t1908e.memeportalapi.service.PostService;
-import com.t1908e.memeportalapi.util.RESTResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/test")
@@ -33,9 +26,9 @@ public class TestController {
     private final    UserRepository userRepository;
 
     @RequestMapping(value = "/testList",method = RequestMethod.GET)
-    public ResponseEntity<Iterable<PostDTO>> testList(){
+    public ResponseEntity<Iterable<PostDetailDTO>> testList(){
 
-        Iterable<PostDTO> posts  = postService.getListPost(PageRequest.of(0, 3));
+        Iterable<PostDetailDTO> posts  = postService.getListPost(PageRequest.of(0, 3));
         //        for ( Post cate: posts
 //             ) {
 //            System.out.print(cate.getId());
