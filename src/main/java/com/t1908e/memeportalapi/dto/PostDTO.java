@@ -6,7 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.Date;
 
 @Data
@@ -51,6 +53,12 @@ public class PostDTO {
         private String image;
         @NotNull(message = "CategoryId is required")
         private int categoryId;
+    }
+
+    @Data
+    public static class VerifyPostDTO {
+        @NotEmpty(message = "post id is required")
+        private ArrayList<Integer> postIds = new ArrayList<>();
     }
 
 }

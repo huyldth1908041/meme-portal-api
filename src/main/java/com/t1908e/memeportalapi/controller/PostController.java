@@ -78,4 +78,14 @@ public class PostController {
         if (sortBy == null) sortBy = "id";
         return postService.searchListPost(params, page - 1, limit, sortBy, order);
     }
+
+    @RequestMapping(value = "/verify", method = RequestMethod.POST)
+    public ResponseEntity<?> verifyPosts(@RequestBody @Valid PostDTO.VerifyPostDTO verifyPostDTO, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "Save post failed");
+        }
+        return postService.verifyPosts(verifyPostDTO.getPostIds());
+
+    }
+
 }
