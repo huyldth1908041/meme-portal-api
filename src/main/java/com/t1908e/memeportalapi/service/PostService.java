@@ -1,6 +1,11 @@
 package com.t1908e.memeportalapi.service;
 
 
+import ch.qos.logback.core.pattern.Converter;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import com.t1908e.memeportalapi.dto.PostDTO;
 import com.t1908e.memeportalapi.dto.UserDTO;
 import com.t1908e.memeportalapi.entity.Category;
@@ -8,16 +13,20 @@ import com.t1908e.memeportalapi.entity.Post;
 import com.t1908e.memeportalapi.entity.User;
 import com.t1908e.memeportalapi.repository.CategoryRepository;
 import com.t1908e.memeportalapi.repository.PostRepository;
+import com.t1908e.memeportalapi.specification.PostSpecification;
+import com.t1908e.memeportalapi.specification.PostSpecificationBuilder;
+import com.t1908e.memeportalapi.specification.SearchCriteria;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -75,5 +84,43 @@ public class PostService {
                     .setMessage(exception.getMessage()).build();
             return ResponseEntity.internalServerError().body(restResponse);
         }
+    }
+
+    public ResponseEntity<?> searchListPost(
+            HashMap<String, Object> params,
+            Integer page,
+            Integer limit,
+            String sortBy,
+            String order
+    ) {
+        HashMap<String, Object> restResponse = new HashMap<>();
+        PostSpecificationBuilder builder = new PostSpecificationBuilder();
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            builder.with(key, ":", value);
+        }
+        Specification<Post> spec = builder.build();
+        Sort.Direction direction;
+        if (order == null) {
+            direction = Sort.Direction.DESC;
+        } else if (order.equalsIgnoreCase("asc")) {
+            direction = Sort.Direction.ASC;
+        } else {
+            direction = Sort.Direction.DESC;
+        }
+        Pageable pageInfo = PageRequest.of(page, limit, Sort.by(direction, sortBy));
+        Page<Post> all = postRepository.findAll(spec, pageInfo);
+        Page<PostDTO> dtoPage = all.map(new Function<Post, PostDTO>() {
+            @Override
+            public PostDTO apply(Post post) {
+                return new PostDTO(post);
+            }
+        });
+        restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData(dtoPage).build();
+        return ResponseEntity.ok().body(restResponse);
     }
 }
