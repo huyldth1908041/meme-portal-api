@@ -51,7 +51,7 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests().anyRequest().authenticated();
         http.addFilter(apiAuthenticationFilter);
         http.addFilterBefore(new CorsFilter(), ChannelProcessingFilter.class);
-        http.addFilterBefore(new ApiAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(new ApiAuthorizationFilter(authenticationService), UsernamePasswordAuthenticationFilter.class);
     }
 
     @Bean
