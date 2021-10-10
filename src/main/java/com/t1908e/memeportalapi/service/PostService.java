@@ -123,4 +123,13 @@ public class PostService {
                 .setData(dtoPage).build();
         return ResponseEntity.ok().body(restResponse);
     }
+
+    public ResponseEntity<?> verifyPosts(ArrayList<Integer> postIds) {
+        int recordsAffected = postRepository.changePostStatus(postIds, 1);// 1 -> ACTIVE
+        HashMap<String, Object> restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData("Updated success ".concat(String.valueOf(recordsAffected)).concat(" rows affected")).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
 }
