@@ -35,8 +35,6 @@ public class ApiAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         this.authenticationService = authenticationService;
     }
 
-
-
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
         try {

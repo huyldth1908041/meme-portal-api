@@ -24,7 +24,7 @@ public class ApiAuthorizationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        //let login and register pass through
+
         String requestPath = request.getServletPath();
         if (Arrays.asList(IGNORE_PATHS).contains(requestPath)) {
             filterChain.doFilter(request, response);
