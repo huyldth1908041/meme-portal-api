@@ -90,5 +90,15 @@ public class PostController {
 
     }
 
+    @RequestMapping(value = "/postDetail", method = RequestMethod.GET)
+    public ResponseEntity<?> getPostDetail(
+            @RequestParam(name = "postId", required = true) Integer postId
+    ){
+
+
+        return postService.getPostDetail(postId);
+    }
+
+
 
 }

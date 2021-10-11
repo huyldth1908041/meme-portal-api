@@ -3,6 +3,7 @@ package com.t1908e.memeportalapi.service;
 
 
 import ch.qos.logback.core.pattern.Converter;
+import com.t1908e.memeportalapi.entity.Account;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +21,7 @@ import com.t1908e.memeportalapi.specification.SearchCriteria;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -132,6 +134,21 @@ public class PostService {
                 .setStatus(HttpStatus.OK.value())
                 .setData("Updated success ".concat(String.valueOf(recordsAffected)).concat(" rows affected")).build();
         return ResponseEntity.ok().body(restResponse);
+    }
+
+    public ResponseEntity<?> getPostDetail(int id){
+        Optional<Post> postOptional = postRepository.findById(id);
+        Post post = postOptional.orElse(null);
+        if(post==null ){
+            HashMap<String, Object> restResponse = new RESTResponse.Success()
+                    .setMessage("This post is not exist or had been delete !")
+                    .setStatus(HttpStatus.NOT_FOUND.value())
+                    .setData("Not Found !").build();
+            return new ResponseEntity<>(restResponse,new HttpHeaders(),HttpStatus.NOT_FOUND);
+        }
+
+        PostDTO response = new PostDTO( post);
+        return ResponseEntity.ok().body(response);
     }
 
 }

@@ -10,6 +10,8 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Optional;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -26,6 +28,8 @@ public class PostDTO {
     private String category;
     private UserDTO creator;
     private int likeCounts;
+    private Set<PostLikeDTO> postLikeSet;
+
 
     public PostDTO (Post post) {
         this.id = post.getId();
@@ -42,7 +46,11 @@ public class PostDTO {
             this.likeCounts = post.getPostLikes().size();
         }
         this.creator = new UserDTO(post.getUser());
+        post.getPostLikes().forEach(item -> this.postLikeSet.add(new PostLikeDTO(item)));
+
     }
+
+
 
     @Data
     public static class CreatePostDTO {

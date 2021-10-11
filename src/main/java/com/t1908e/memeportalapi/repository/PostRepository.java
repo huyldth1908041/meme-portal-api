@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.ArrayList;
+import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Integer>, JpaSpecificationExecutor<Post> {
     Page<Post> findAll(Specification<Post> spec, Pageable pageable);
@@ -19,5 +20,8 @@ public interface PostRepository extends JpaRepository<Post, Integer>, JpaSpecifi
     @Modifying(flushAutomatically = true)
     @Query("update Post post set post.status = :status where post.id in :ids")
     int changePostStatus(@Param(value = "ids") ArrayList<Integer> ids, @Param(value = "status") int status);
+
+
+    Optional<Post> findById(int id);
 }
 
