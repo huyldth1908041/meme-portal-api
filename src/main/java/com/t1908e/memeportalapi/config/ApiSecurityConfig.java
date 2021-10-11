@@ -40,7 +40,10 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
         http.csrf().disable();
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.authorizeRequests()
-                .antMatchers("/api/v1/register**", "/api/v1/login**", "/api/v1/token/refresh**", "/api/v1/users/public**")
+                .antMatchers("/api/v1/register**", "/api/v1/register/*",
+                        "/api/v1/login**", "/api/v1/login/*",
+                        "/api/v1/token/refresh**", "/api/v1/token/refresh/*",
+                        "/api/v1/categories**", "/api/v1/categories/*")
                 .permitAll();
         http.authorizeRequests().antMatchers(HttpMethod.GET, "/api/v1/posts/**").permitAll();
         http.authorizeRequests().antMatchers("/api/v1/posts/verify",
