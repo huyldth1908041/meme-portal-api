@@ -40,17 +40,21 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
         http.csrf().disable();
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.authorizeRequests()
-                .antMatchers("/api/v1/register**", "/api/v1/login**", "/api/v1/token/refresh**", "/api/v1/users/public**",
-                        "/api/v1/post/list","/api/v1/test/**")
+                .antMatchers("/api/v1/register**", "/api/v1/register/*",
+                        "/api/v1/login**", "/api/v1/login/*",
+                        "/api/v1/token/refresh**", "/api/v1/token/refresh/*",
+                        "/api/v1/categories**", "/api/v1/categories/*")
                 .permitAll();
         http.authorizeRequests().antMatchers(HttpMethod.GET, "/api/v1/posts/**").permitAll();
-        http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/v1/posts/**").hasAnyAuthority("user");
+        http.authorizeRequests().antMatchers("/api/v1/posts/verify",
+                "/api/v1/posts/verify/*").hasAnyAuthority("admin");
+        http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/v1/posts/**").hasAnyAuthority("user", "admin");
         //add requests path for more role here
-        //http.authorizeRequests().antMatchers("/api/v1/admin/**").hasAnyAuthority("admin");
+
         http.authorizeRequests().anyRequest().authenticated();
         http.addFilter(apiAuthenticationFilter);
         http.addFilterBefore(new CorsFilter(), ChannelProcessingFilter.class);
-        http.addFilterBefore(new ApiAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(new ApiAuthorizationFilter(authenticationService), UsernamePasswordAuthenticationFilter.class);
     }
 
     @Bean
