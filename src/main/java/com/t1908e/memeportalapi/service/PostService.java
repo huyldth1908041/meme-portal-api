@@ -2,6 +2,7 @@ package com.t1908e.memeportalapi.service;
 
 
 import ch.qos.logback.core.pattern.Converter;
+import com.t1908e.memeportalapi.entity.Account;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +20,7 @@ import com.t1908e.memeportalapi.specification.SearchCriteria;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -196,6 +198,26 @@ public class PostService {
         return ResponseEntity.ok().body(restResponse);
     }
 
+
+    public ResponseEntity<?> getPostDetail(int id) {
+        HashMap<String, Object> restResponse = new HashMap<>();
+        Optional<Post> postOptional = postRepository.findById(id);
+        Post post = postOptional.orElse(null);
+        if (post == null) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("This post is not exist or had been delete !")
+                    .setCode(HttpStatus.NOT_FOUND.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData(new PostDTO(post)).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
+
+
     public ResponseEntity<?> deletePosts(ArrayList<Integer> postIds) {
         int recordsAffected = postRepository.changePostStatus(postIds, -1);// -1 -> DE-ACTIVE
         HashMap<String, Object> restResponse = new RESTResponse.Success()
@@ -204,4 +226,5 @@ public class PostService {
                 .setData("Updated success ".concat(String.valueOf(recordsAffected)).concat(" rows affected")).build();
         return ResponseEntity.ok().body(restResponse);
     }
+
 }

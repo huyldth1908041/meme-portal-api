@@ -1,15 +1,14 @@
 package com.t1908e.memeportalapi.controller;
 
+
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 import com.t1908e.memeportalapi.dto.PostDTO;
-import com.t1908e.memeportalapi.entity.Post;
 import com.t1908e.memeportalapi.service.PostService;
 import com.t1908e.memeportalapi.util.JwtUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import com.t1908e.memeportalapi.util.RESTUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -79,6 +78,7 @@ public class PostController {
         return postService.searchListPost(params, page - 1, limit, sortBy, order);
     }
 
+
     @RequestMapping(value = "/verify", method = RequestMethod.POST)
     public ResponseEntity<?> verifyPosts(@RequestBody @Valid PostDTO.VerifyPostDTO verifyPostDTO, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -87,6 +87,12 @@ public class PostController {
 
         return postService.verifyPosts(verifyPostDTO.getPostIds());
 
+    }
+
+
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    public ResponseEntity<?> getPostDetail(@PathVariable(name = "id") int id){
+        return postService.getPostDetail(id);
     }
 
     @RequestMapping(value = "", method = RequestMethod.DELETE)
