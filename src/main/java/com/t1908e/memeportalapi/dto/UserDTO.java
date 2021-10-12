@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Data
@@ -41,5 +43,22 @@ public class UserDTO {
         this.displayNameColor = user.getDisplayNameColor();
         this.avatar = user.getAvatar();
         this.fullName = user.getFullName();
+    }
+
+    @Data
+    @NoArgsConstructor
+    public static class UpdateUserProfileDTO {
+        public static final String DATE_FORMAT = "dd-MM-yyyy";
+
+        @NotBlank(message = "avatar is required")
+        private String avatar;
+        @NotBlank(message = "phone is required")
+        private String phone;
+        @NotBlank(message = "full name is required")
+        private String fullName;
+        @NotBlank(message = "birthday is required")
+        private String birthday;
+        @NotNull(message = "gender is required")
+        private int gender;
     }
 }

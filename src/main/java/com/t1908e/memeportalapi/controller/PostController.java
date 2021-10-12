@@ -4,13 +4,11 @@ package com.t1908e.memeportalapi.controller;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 import com.t1908e.memeportalapi.dto.PostDTO;
-import com.t1908e.memeportalapi.entity.Post;
 import com.t1908e.memeportalapi.service.PostService;
 import com.t1908e.memeportalapi.util.JwtUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import com.t1908e.memeportalapi.util.RESTUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -84,21 +82,50 @@ public class PostController {
     @RequestMapping(value = "/verify", method = RequestMethod.POST)
     public ResponseEntity<?> verifyPosts(@RequestBody @Valid PostDTO.VerifyPostDTO verifyPostDTO, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            return RESTUtil.getValidationErrorsResponse(bindingResult, "Save post failed");
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "update post failed");
         }
+
         return postService.verifyPosts(verifyPostDTO.getPostIds());
 
     }
 
-    @RequestMapping(value = "/postDetail", method = RequestMethod.GET)
-    public ResponseEntity<?> getPostDetail(
-            @RequestParam(name = "postId", required = true) Integer postId
-    ){
 
-
-        return postService.getPostDetail(postId);
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    public ResponseEntity<?> getPostDetail(@PathVariable(name = "id") int id){
+        return postService.getPostDetail(id);
     }
 
+    @RequestMapping(value = "", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deletePosts(@RequestBody @Valid PostDTO.VerifyPostDTO verifyPostDTO, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "delete post failed");
+        }
+        return postService.deletePosts(verifyPostDTO.getPostIds());
 
+    }
+
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+    public ResponseEntity<?> editPost(
+            @RequestBody @Valid PostDTO.CreatePostDTO createPostDTO,
+            BindingResult bindingResult,
+            @PathVariable(name = "id") int id,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+        if (bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "edit post failed");
+        }
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+        return postService.editPost(createPostDTO, username, id);
+
+    }
 
 }

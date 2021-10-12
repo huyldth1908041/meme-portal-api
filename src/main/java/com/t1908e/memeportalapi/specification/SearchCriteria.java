@@ -3,6 +3,8 @@ package com.t1908e.memeportalapi.specification;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 public class SearchCriteria {
@@ -17,4 +19,5 @@ public class SearchCriteria {
         this.operation = operation;
         this.value = value;
     }
+
 }

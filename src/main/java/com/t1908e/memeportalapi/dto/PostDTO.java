@@ -28,10 +28,9 @@ public class PostDTO {
     private String category;
     private UserDTO creator;
     private int likeCounts;
-    private Set<PostLikeDTO> postLikeSet;
 
 
-    public PostDTO (Post post) {
+    public PostDTO(Post post) {
         this.id = post.getId();
         this.title = post.getTitle();
         this.description = post.getDescription();
@@ -39,15 +38,13 @@ public class PostDTO {
         this.upHotTokenNeeded = post.getUpHotTokenNeeded();
         this.status = post.getStatus();
         this.createdAt = post.getCreatedAt();
-        this.updatedAt = post.getCreatedAt();
+        this.updatedAt = post.getUpdatedAt();
         this.category = post.getCategory().getName();
         this.likeCounts = 0;
-        if(post.getPostLikes() != null) {
+        if (post.getPostLikes() != null) {
             this.likeCounts = post.getPostLikes().size();
         }
         this.creator = new UserDTO(post.getUser());
-        post.getPostLikes().forEach(item -> this.postLikeSet.add(new PostLikeDTO(item)));
-
     }
 
 

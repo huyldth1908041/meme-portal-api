@@ -21,7 +21,9 @@ public interface PostRepository extends JpaRepository<Post, Integer>, JpaSpecifi
     @Query("update Post post set post.status = :status where post.id in :ids")
     int changePostStatus(@Param(value = "ids") ArrayList<Integer> ids, @Param(value = "status") int status);
 
+    @Modifying(flushAutomatically = true)
+    @Query("update Post  post set post.status = :status where post.userId = :userId")
+    int changePostStatusAccordingUserId(@Param(value = "userId") long userId, @Param(value = "status") int status);
 
-    Optional<Post> findById(int id);
 }
 
