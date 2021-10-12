@@ -1,7 +1,9 @@
 package com.t1908e.memeportalapi.entity;
 
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -9,7 +11,8 @@ import java.util.Set;
 
 @Entity
 @NoArgsConstructor
-@Data
+@Getter
+@Setter
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
