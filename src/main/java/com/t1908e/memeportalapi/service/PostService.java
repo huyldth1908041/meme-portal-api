@@ -64,13 +64,76 @@ public class PostService {
         newPost.setDescription(postDTO.getDescription());
         newPost.setImage(postDTO.getImage());
         newPost.setUpHotTokenNeeded(0);
-        newPost.setStatus(0); // 0 -> PENDING
+        if (creator.getAccount().getRole().getName().equals("admin")) {
+            newPost.setStatus(1); // admin create post no need to verify
+        } else {
+            newPost.setStatus(0); // 0 -> PENDING
+        }
         newPost.setCreatedAt(new Date());
         newPost.setUpdatedAt(new Date());
         newPost.setCategory(postCategory);
         newPost.setUser(creator);
         try {
             Post savedPost = postRepository.save(newPost);
+            restResponse = new RESTResponse.Success()
+                    .setMessage("success")
+                    .setStatus(HttpStatus.CREATED.value())
+                    .setData(new PostDTO(savedPost)).build();
+            return ResponseEntity.ok().body(restResponse);
+
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .setMessage(exception.getMessage()).build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
+    }
+
+    public ResponseEntity<?> editPost(PostDTO.CreatePostDTO postDTO, String creatorUsername, int postId) {
+        HashMap<String, Object> restResponse = new HashMap<>();
+        if (creatorUsername.isEmpty() || postDTO == null) {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .setMessage("Null pointer exception").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Optional<Category> categoryOptional = categoryRepository.findById(postDTO.getCategoryId());
+        if (!categoryOptional.isPresent()) {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Category not found").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Category postCategory = categoryOptional.get();
+        User editor = authenticationService.getAppUser(creatorUsername);
+        if (editor == null) {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("User not found").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        if (editor.getAccount().getRole().getName().equals("user")) {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Permission denied").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Optional<Post> postOptional = postRepository.findById(postId);
+        if (!postOptional.isPresent()) {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.NOT_FOUND.value())
+                    .setMessage("Post not found").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Post existPost = postOptional.get();
+        existPost.setTitle(postDTO.getTitle());
+        existPost.setDescription(postDTO.getDescription());
+        existPost.setImage(postDTO.getImage());
+        existPost.setUpdatedAt(new Date());
+        existPost.setCategory(postCategory);
+        try {
+            Post savedPost = postRepository.save(existPost);
             restResponse = new RESTResponse.Success()
                     .setMessage("success")
                     .setStatus(HttpStatus.CREATED.value())
@@ -126,6 +189,15 @@ public class PostService {
 
     public ResponseEntity<?> verifyPosts(ArrayList<Integer> postIds) {
         int recordsAffected = postRepository.changePostStatus(postIds, 1);// 1 -> ACTIVE
+        HashMap<String, Object> restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData("Updated success ".concat(String.valueOf(recordsAffected)).concat(" rows affected")).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
+
+    public ResponseEntity<?> deletePosts(ArrayList<Integer> postIds) {
+        int recordsAffected = postRepository.changePostStatus(postIds, -1);// -1 -> DE-ACTIVE
         HashMap<String, Object> restResponse = new RESTResponse.Success()
                 .setMessage("Ok")
                 .setStatus(HttpStatus.OK.value())

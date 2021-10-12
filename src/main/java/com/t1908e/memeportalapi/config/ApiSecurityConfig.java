@@ -48,7 +48,13 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests().antMatchers(HttpMethod.GET, "/api/v1/posts/**").permitAll();
         http.authorizeRequests().antMatchers("/api/v1/posts/verify",
                 "/api/v1/posts/verify/*").hasAnyAuthority("admin");
-        http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/v1/posts/**").hasAnyAuthority("user", "admin");
+        http.authorizeRequests().antMatchers(HttpMethod.DELETE, "/api/v1/posts**",
+                "/api/v1/posts/*").hasAnyAuthority("admin");
+        http.authorizeRequests().antMatchers(HttpMethod.PUT, "/api/v1/posts**",
+                "/api/v1/posts/**").hasAnyAuthority("admin");
+        http.authorizeRequests()
+                .antMatchers(HttpMethod.POST, "/api/v1/posts/**", "/api/v1/posts*")
+                .hasAnyAuthority("user", "admin");
         //add requests path for more role here
 
         http.authorizeRequests().anyRequest().authenticated();

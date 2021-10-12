@@ -82,9 +82,43 @@ public class PostController {
     @RequestMapping(value = "/verify", method = RequestMethod.POST)
     public ResponseEntity<?> verifyPosts(@RequestBody @Valid PostDTO.VerifyPostDTO verifyPostDTO, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            return RESTUtil.getValidationErrorsResponse(bindingResult, "Save post failed");
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "update post failed");
         }
+
         return postService.verifyPosts(verifyPostDTO.getPostIds());
+
+    }
+
+    @RequestMapping(value = "", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deletePosts(@RequestBody @Valid PostDTO.VerifyPostDTO verifyPostDTO, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "delete post failed");
+        }
+        return postService.deletePosts(verifyPostDTO.getPostIds());
+
+    }
+
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+    public ResponseEntity<?> editPost(
+            @RequestBody @Valid PostDTO.CreatePostDTO createPostDTO,
+            BindingResult bindingResult,
+            @PathVariable(name = "id") int id,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+        if (bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "edit post failed");
+        }
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+        return postService.editPost(createPostDTO, username, id);
 
     }
 
