@@ -28,6 +28,7 @@ public class PostDTO {
     private String category;
     private UserDTO creator;
     private int likeCounts;
+    private int categoryId;
 
 
     public PostDTO(Post post) {
@@ -40,6 +41,7 @@ public class PostDTO {
         this.createdAt = post.getCreatedAt();
         this.updatedAt = post.getUpdatedAt();
         this.category = post.getCategory().getName();
+        this.categoryId = post.getCategoryId();
         this.likeCounts = 0;
         if (post.getPostLikes() != null) {
             this.likeCounts = post.getPostLikes().size();
