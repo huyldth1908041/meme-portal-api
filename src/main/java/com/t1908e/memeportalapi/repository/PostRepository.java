@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Integer>, JpaSpecificationExecutor<Post> {
@@ -25,5 +26,7 @@ public interface PostRepository extends JpaRepository<Post, Integer>, JpaSpecifi
     @Query("update Post  post set post.status = :status where post.userId = :userId")
     int changePostStatusAccordingUserId(@Param(value = "userId") long userId, @Param(value = "status") int status);
 
+    @Query("SELECT post FROM Post post WHERE post.userId = :userId")
+    List<Post> findAllByUserId(@Param(value = "userId") long userId);
 }
 

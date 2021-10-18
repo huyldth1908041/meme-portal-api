@@ -91,7 +91,7 @@ public class PostController {
 
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    public ResponseEntity<?> getPostDetail(@PathVariable(name = "id") int id){
+    public ResponseEntity<?> getPostDetail(@PathVariable(name = "id") int id) {
         return postService.getPostDetail(id);
     }
 
@@ -126,6 +126,11 @@ public class PostController {
         String username = decodedJWT.getSubject();
         return postService.editPost(createPostDTO, username, id);
 
+    }
+
+    @RequestMapping(value = "/topCreator", method = RequestMethod.GET)
+    public ResponseEntity<?> editPost() {
+        return postService.getTopCreator();
     }
 
 }

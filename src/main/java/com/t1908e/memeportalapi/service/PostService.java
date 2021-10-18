@@ -2,7 +2,9 @@ package com.t1908e.memeportalapi.service;
 
 
 import ch.qos.logback.core.pattern.Converter;
+import com.t1908e.memeportalapi.dto.TopCreatorDTO;
 import com.t1908e.memeportalapi.entity.Account;
+import com.t1908e.memeportalapi.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +39,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final CategoryRepository categoryRepository;
     private final AuthenticationService authenticationService;
+    private final UserRepository userRepository;
 
     public ResponseEntity<?> savePost(PostDTO.CreatePostDTO postDTO, String creatorUsername) {
         HashMap<String, Object> restResponse = new HashMap<>();
@@ -224,6 +227,36 @@ public class PostService {
                 .setMessage("Ok")
                 .setStatus(HttpStatus.OK.value())
                 .setData("Updated success ".concat(String.valueOf(recordsAffected)).concat(" rows affected")).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
+
+    public ResponseEntity<?> getTopCreator() {
+        List<User> activeUsers = userRepository.findAllByStatus(1);
+        HashMap<Integer, User> userByPostsCount = new HashMap<>();
+        //O(n^2)
+        for (int i = 0; i < activeUsers.size(); i++) {
+            User user = activeUsers.get(i);
+            Set<Post> posts = user.getPosts();
+            List<Post> activePosts = posts.stream().filter(item -> item.getStatus() > 0).collect(Collectors.toList());
+            userByPostsCount.put(activePosts.size(), user);
+        }
+        TreeMap<Integer, User> sorted = new TreeMap<>(Collections.reverseOrder());
+        //O(Log n)
+        sorted.putAll(userByPostsCount);
+        ArrayList<TopCreatorDTO> topCreatorDTOs = new ArrayList<>();
+        //O(n)
+        for (Map.Entry<Integer, User> entry : sorted.entrySet()) {
+            Integer count = entry.getKey();
+            User user = entry.getValue();
+            if (topCreatorDTOs.size() == 5) {
+                break;
+            }
+            topCreatorDTOs.add(new TopCreatorDTO(user, count));
+        }
+        HashMap<String, Object> restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData(topCreatorDTOs).build();
         return ResponseEntity.ok().body(restResponse);
     }
 
