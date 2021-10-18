@@ -4,6 +4,8 @@ package com.t1908e.memeportalapi.controller;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 import com.t1908e.memeportalapi.dto.PostDTO;
+import com.t1908e.memeportalapi.dto.PostLikeDTO;
+import com.t1908e.memeportalapi.service.PostLikeService;
 import com.t1908e.memeportalapi.service.PostService;
 import com.t1908e.memeportalapi.util.JwtUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
@@ -25,6 +27,7 @@ import java.util.List;
 @CrossOrigin
 public class PostController {
     private final PostService postService;
+    private final PostLikeService postLikeService;
 
     @RequestMapping(value = "", method = RequestMethod.POST)
     public ResponseEntity<?> createPost(
@@ -125,6 +128,27 @@ public class PostController {
         DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
         String username = decodedJWT.getSubject();
         return postService.editPost(createPostDTO, username, id);
+
+    }
+
+    @RequestMapping(value = "/likePost", method = RequestMethod.POST)
+    public ResponseEntity<?> saveLikePost(@RequestBody @Valid PostLikeDTO.UserLikePostDTO userLikePostDTO,
+                                          BindingResult bindingResult,
+                                          @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+        if (bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "update post failed");
+        }
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+        return postLikeService.savePostLike(userLikePostDTO,username);
 
     }
 
