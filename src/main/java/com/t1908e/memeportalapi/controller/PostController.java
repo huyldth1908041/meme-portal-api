@@ -153,7 +153,7 @@ public class PostController {
 
 
     @RequestMapping(value = "/topCreator", method = RequestMethod.GET)
-    public ResponseEntity<?> editPost() {
+    public ResponseEntity<?> topCreator() {
         return postService.getTopCreator();
     }
 
