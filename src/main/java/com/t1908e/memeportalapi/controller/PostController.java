@@ -94,7 +94,7 @@ public class PostController {
 
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    public ResponseEntity<?> getPostDetail(@PathVariable(name = "id") int id){
+    public ResponseEntity<?> getPostDetail(@PathVariable(name = "id") int id) {
         return postService.getPostDetail(id);
     }
 
@@ -131,6 +131,7 @@ public class PostController {
 
     }
 
+
     @RequestMapping(value = "/likePost", method = RequestMethod.POST)
     public ResponseEntity<?> saveLikePost(@RequestBody @Valid PostLikeDTO.UserLikePostDTO userLikePostDTO,
                                           BindingResult bindingResult,
@@ -150,6 +151,10 @@ public class PostController {
         String username = decodedJWT.getSubject();
         return postLikeService.savePostLike(userLikePostDTO,username);
 
+
+    @RequestMapping(value = "/topCreator", method = RequestMethod.GET)
+    public ResponseEntity<?> editPost() {
+        return postService.getTopCreator();
     }
 
 }
