@@ -149,8 +149,9 @@ public class PostController {
         String accessToken = token.replace("Bearer", "").trim();
         DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
         String username = decodedJWT.getSubject();
-        return postLikeService.savePostLike(userLikePostDTO,username);
+        return postLikeService.savePostLike(userLikePostDTO, username);
 
+    }
 
     @RequestMapping(value = "/topCreator", method = RequestMethod.GET)
     public ResponseEntity<?> topCreator() {
