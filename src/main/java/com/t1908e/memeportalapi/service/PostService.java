@@ -229,6 +229,9 @@ public class PostService {
             User user = activeUsers.get(i);
             Set<Post> posts = user.getPosts();
             List<Post> activePosts = posts.stream().filter(item -> item.getStatus() > 0).collect(Collectors.toList());
+            if(activePosts.size() == 0) {
+                continue;
+            }
             userByPostsCount.put(activePosts.size(), user);
         }
         TreeMap<Integer, User> sorted = new TreeMap<>(Collections.reverseOrder());

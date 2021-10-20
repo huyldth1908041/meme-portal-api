@@ -203,4 +203,9 @@ public class PostController {
         return postService.getLikeCount(id, username);
     }
 
+    @RequestMapping(value = "/topCreator", method = RequestMethod.GET)
+    public ResponseEntity<?> getTopCreator() {
+        return postService.getTopCreator();
+    }
+
 }
