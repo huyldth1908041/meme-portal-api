@@ -1,7 +1,10 @@
 package com.t1908e.memeportalapi.dto;
 
 import com.t1908e.memeportalapi.entity.Comment;
+import lombok.Data;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,4 +36,21 @@ public class CommentDTO {
         this.commentLikeDTO = new HashSet<>();
         comment.getCommentLikes().forEach(item -> this.commentLikeDTO.add(new CommentLikeDTO(item)));
     }
+
+    @Data
+    public class CreateCommentDTO{
+
+        @NotBlank(message = "Content is required")
+        private String content;
+        @NotNull(message = "CreatedAt is required")
+        private Date createdAt;
+        @NotNull(message = "UpdatedAt is required")
+        private Date updatedAt;
+        private int repliedCommentId;
+        @NotNull(message = "PostId is required")
+        private int postId;
+        @NotNull(message = "UserId is required")
+        private long userId;
+    }
+
 }

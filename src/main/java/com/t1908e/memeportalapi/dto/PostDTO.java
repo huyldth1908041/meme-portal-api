@@ -8,10 +8,7 @@ import lombok.NoArgsConstructor;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Data
 @AllArgsConstructor
@@ -29,6 +26,7 @@ public class PostDTO {
     private UserDTO creator;
     private int likeCounts;
     private int categoryId;
+    private List<CommentDTO> commentDTOSet;
 
 
     public PostDTO(Post post) {
@@ -47,6 +45,7 @@ public class PostDTO {
             this.likeCounts = post.getPostLikes().size();
         }
         this.creator = new UserDTO(post.getUser());
+//        this.commentDTOSet  = post.getComments().stream().map(item -> new CommentDTO(item).);
     }
 
 
