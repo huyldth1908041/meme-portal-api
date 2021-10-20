@@ -26,7 +26,7 @@ public class PostDTO {
     private UserDTO creator;
     private int likeCounts;
     private int categoryId;
-    private List<CommentDTO> commentDTOSet;
+    private Set<CommentDTO> commentDTOSet;
 
 
     public PostDTO(Post post) {
@@ -45,9 +45,11 @@ public class PostDTO {
             this.likeCounts = post.getPostLikes().size();
         }
         this.creator = new UserDTO(post.getUser());
-//        this.commentDTOSet  = post.getComments().stream().map(item -> new CommentDTO(item).);
+        if (post.getComments() != null) {
+            this.commentDTOSet = new HashSet<>();
+            post.getComments().forEach(item -> this.commentDTOSet.add(new CommentDTO(item)));
+        }
     }
-
 
 
     @Data
