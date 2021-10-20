@@ -4,8 +4,6 @@ package com.t1908e.memeportalapi.controller;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 import com.t1908e.memeportalapi.dto.PostDTO;
-import com.t1908e.memeportalapi.dto.PostLikeDTO;
-import com.t1908e.memeportalapi.service.PostLikeService;
 import com.t1908e.memeportalapi.service.PostService;
 import com.t1908e.memeportalapi.util.JwtUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
@@ -17,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.List;
 @CrossOrigin
 public class PostController {
     private final PostService postService;
-    private final PostLikeService postLikeService;
 
     @RequestMapping(value = "", method = RequestMethod.POST)
     public ResponseEntity<?> createPost(
@@ -133,11 +131,12 @@ public class PostController {
 
 
     @RequestMapping(value = "/likePost", method = RequestMethod.POST)
-    public ResponseEntity<?> saveLikePost(@RequestBody @Valid PostLikeDTO.UserLikePostDTO userLikePostDTO,
-                                          BindingResult bindingResult,
-                                          @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+    public ResponseEntity<?> likePost(
+            @RequestBody PostDTO.SendPostLikeDTO sendPostLikeDTO,
+            BindingResult bindingResult,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
         if (bindingResult.hasErrors()) {
-            return RESTUtil.getValidationErrorsResponse(bindingResult, "update post failed");
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "like post failed");
         }
         if (token == null || !token.startsWith("Bearer ")) {
             return ResponseEntity.badRequest().body(new RESTResponse
@@ -146,16 +145,42 @@ public class PostController {
                     .setMessage("Required token in header")
                     .build());
         }
+
         String accessToken = token.replace("Bearer", "").trim();
         DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
         String username = decodedJWT.getSubject();
-        return postLikeService.savePostLike(userLikePostDTO, username);
-
+        return postService.LikeAPost(sendPostLikeDTO.getPostId(), username);
     }
 
-    @RequestMapping(value = "/topCreator", method = RequestMethod.GET)
-    public ResponseEntity<?> topCreator() {
-        return postService.getTopCreator();
+    @RequestMapping(value = "/{id}/like", method = RequestMethod.GET)
+    public ResponseEntity<?> getPostLikes(
+            @PathVariable(name = "id") int id,
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "order", required = false) String order,
+            @RequestParam(name = "sortBy", required = false) String sortBy,
+            HttpServletRequest request
+    ) {
+        if (page == null || page <= 0) page = 1;
+        if (limit == null) limit = 30;
+        if (sortBy == null) sortBy = "id";
+        String username = null;
+       try {
+           String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+           if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+               String token = authorizationHeader.replace("Bearer", "").trim();
+               DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(token);
+               username = decodedJWT.getSubject();
+           }
+       } catch (Exception exception) {
+           HashMap<String, Object> restResponse = new RESTResponse.CustomError()
+                   .setMessage("Decode jwt failed")
+                   .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                   .build();
+           return ResponseEntity.internalServerError().body(restResponse);
+       }
+
+        return postService.getPostLikes(id, page - 1, limit, sortBy, order, username);
     }
 
 }

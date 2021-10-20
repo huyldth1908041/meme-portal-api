@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 @Getter
@@ -44,4 +45,10 @@ public class Post {
     private Set<PostLike> postLikes;
 
 
+    public void addPostLike(PostLike postLike) {
+        if (this.postLikes == null) {
+            this.postLikes = new HashSet<>();
+        }
+        this.postLikes.add(postLike);
+    }
 }

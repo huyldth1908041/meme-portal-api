@@ -1,17 +1,14 @@
 package com.t1908e.memeportalapi.dto;
 
 import com.t1908e.memeportalapi.entity.Post;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.springframework.data.domain.Page;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Optional;
-import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -50,7 +47,6 @@ public class PostDTO {
     }
 
 
-
     @Data
     public static class CreatePostDTO {
         @NotBlank(message = "Title is required")
@@ -67,5 +63,26 @@ public class PostDTO {
         @NotEmpty(message = "post id is required")
         private ArrayList<Integer> postIds = new ArrayList<>();
     }
+
+    @Data
+    public static class PostLikeDTO {
+        private int likeCount;
+        private boolean hasLikedYet = false;
+    }
+
+    @Data
+    public static class SendPostLikeDTO {
+        @NotNull(message = "post id is required")
+        private Integer postId;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    public static class ListPostLikeDTO {
+        private boolean hasLikedYet = false;
+        private Page<UserDTO> likedList;
+    }
+
 
 }
