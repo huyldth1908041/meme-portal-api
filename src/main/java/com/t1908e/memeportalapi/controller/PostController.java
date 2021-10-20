@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
@@ -128,9 +129,78 @@ public class PostController {
 
     }
 
-    @RequestMapping(value = "/topCreator", method = RequestMethod.GET)
-    public ResponseEntity<?> topCreator() {
-        return postService.getTopCreator();
+
+    @RequestMapping(value = "/likePost", method = RequestMethod.POST)
+    public ResponseEntity<?> likePost(
+            @RequestBody PostDTO.SendPostLikeDTO sendPostLikeDTO,
+            BindingResult bindingResult,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+        if (bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "like post failed");
+        }
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+        return postService.LikeAPost(sendPostLikeDTO.getPostId(), username);
+    }
+
+    @RequestMapping(value = "/{id}/like", method = RequestMethod.GET)
+    public ResponseEntity<?> getPostLikes(
+            @PathVariable(name = "id") int id,
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "order", required = false) String order,
+            @RequestParam(name = "sortBy", required = false) String sortBy,
+            HttpServletRequest request
+    ) {
+        if (page == null || page <= 0) page = 1;
+        if (limit == null) limit = 30;
+        if (sortBy == null) sortBy = "id";
+        String username = null;
+        try {
+            String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                String token = authorizationHeader.replace("Bearer", "").trim();
+                DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(token);
+                username = decodedJWT.getSubject();
+            }
+        } catch (Exception exception) {
+            HashMap<String, Object> restResponse = new RESTResponse.CustomError()
+                    .setMessage("Decode jwt failed")
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
+
+        return postService.getPostLikes(id, page - 1, limit, sortBy, order, username);
+    }
+
+    @RequestMapping(value = "/{id}/likeCount", method = RequestMethod.GET)
+    public ResponseEntity<?> getLikeCount(@PathVariable(name = "id") int id, HttpServletRequest request) {
+        String username = null;
+        try {
+            String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                String token = authorizationHeader.replace("Bearer", "").trim();
+                DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(token);
+                username = decodedJWT.getSubject();
+            }
+        } catch (Exception exception) {
+            HashMap<String, Object> restResponse = new RESTResponse.CustomError()
+                    .setMessage("Decode jwt failed")
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
+        return postService.getLikeCount(id, username);
     }
 
 }
