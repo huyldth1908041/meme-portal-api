@@ -379,4 +379,44 @@ public class PostService {
             }
         };
     }
+
+    public ResponseEntity<?> getLikeCount(int id, String username) {
+        HashMap<String, Object> restResponse = new HashMap<>();
+        //get like count
+        Optional<Post> byId = postRepository.findById(id);
+        if (!byId.isPresent() || byId.get().getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("Post not found or has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Post post = byId.get();
+        Set<PostLike> postLikes = post.getPostLikes();
+        int likeCount = postLikes.size();
+        //check if liked yet or not
+        boolean userHasLikedThisPost = false;
+        if (username != null) {
+            User currentUser = authenticationService.getAppUser(username);
+            if (currentUser == null) {
+                restResponse = new RESTResponse.CustomError()
+                        .setMessage("username not found or has been deleted")
+                        .setCode(HttpStatus.BAD_REQUEST.value())
+                        .build();
+                return ResponseEntity.badRequest().body(restResponse);
+            }
+            Optional<PostLike> existOptional = postLikeRepository.findPostLikeByPostIdAndUserId(id, currentUser.getId());
+            if (existOptional.isPresent()) {
+                userHasLikedThisPost = true;
+            }
+        }
+        PostDTO.PostLikeDTO postLikeDTO = new PostDTO.PostLikeDTO();
+        postLikeDTO.setLikeCount(likeCount);
+        postLikeDTO.setHasLikedYet(userHasLikedThisPost);
+        restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData(postLikeDTO).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
 }

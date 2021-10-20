@@ -165,22 +165,42 @@ public class PostController {
         if (limit == null) limit = 30;
         if (sortBy == null) sortBy = "id";
         String username = null;
-       try {
-           String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-           if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-               String token = authorizationHeader.replace("Bearer", "").trim();
-               DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(token);
-               username = decodedJWT.getSubject();
-           }
-       } catch (Exception exception) {
-           HashMap<String, Object> restResponse = new RESTResponse.CustomError()
-                   .setMessage("Decode jwt failed")
-                   .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                   .build();
-           return ResponseEntity.internalServerError().body(restResponse);
-       }
+        try {
+            String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                String token = authorizationHeader.replace("Bearer", "").trim();
+                DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(token);
+                username = decodedJWT.getSubject();
+            }
+        } catch (Exception exception) {
+            HashMap<String, Object> restResponse = new RESTResponse.CustomError()
+                    .setMessage("Decode jwt failed")
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
 
         return postService.getPostLikes(id, page - 1, limit, sortBy, order, username);
+    }
+
+    @RequestMapping(value = "/{id}/likeCount", method = RequestMethod.GET)
+    public ResponseEntity<?> getLikeCount(@PathVariable(name = "id") int id, HttpServletRequest request) {
+        String username = null;
+        try {
+            String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                String token = authorizationHeader.replace("Bearer", "").trim();
+                DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(token);
+                username = decodedJWT.getSubject();
+            }
+        } catch (Exception exception) {
+            HashMap<String, Object> restResponse = new RESTResponse.CustomError()
+                    .setMessage("Decode jwt failed")
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
+        return postService.getLikeCount(id, username);
     }
 
 }
