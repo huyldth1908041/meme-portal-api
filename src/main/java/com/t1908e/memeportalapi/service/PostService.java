@@ -323,9 +323,6 @@ public class PostService {
             return ResponseEntity.badRequest().body(restResponse);
         }
         Post post = byId.get();
-        Set<PostLike> postLikes = post.getPostLikes();
-        List<Long> listUserIds = postLikes.stream().map(item -> item.getUser().getId()).collect(Collectors.toList());
-        Specification<User> likedSpec = userIdIn(listUserIds);
         Sort.Direction direction;
         if (order == null) {
             direction = Sort.Direction.DESC;
@@ -335,7 +332,19 @@ public class PostService {
             direction = Sort.Direction.DESC;
         }
         Pageable pageInfo = PageRequest.of(page, limit, Sort.by(direction, sortBy));
-
+        Set<PostLike> postLikes = post.getPostLikes();
+        if (postLikes == null || postLikes.isEmpty()) {
+            PostDTO.ListPostLikeDTO listPostLikeDTO = new PostDTO.ListPostLikeDTO();
+            listPostLikeDTO.setLikedList(new PageImpl<UserDTO>(new ArrayList<UserDTO>()));
+            listPostLikeDTO.setHasLikedYet(false);
+            restResponse = new RESTResponse.Success()
+                    .setMessage("Ok")
+                    .setStatus(HttpStatus.OK.value())
+                    .setData(listPostLikeDTO).build();
+            return ResponseEntity.ok().body(restResponse);
+        }
+        List<Long> listUserIds = postLikes.stream().map(item -> item.getUser().getId()).collect(Collectors.toList());
+        Specification<User> likedSpec = userIdIn(listUserIds);
         Page<User> all = userRepository.findAll(likedSpec, pageInfo);
         Page<UserDTO> dtoPage = all.map(new Function<User, UserDTO>() {
             @Override
