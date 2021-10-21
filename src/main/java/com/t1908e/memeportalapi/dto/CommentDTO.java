@@ -53,4 +53,24 @@ public class CommentDTO {
         private Integer replyCommentId;
 
     }
+
+    @Data
+    public static class CommentLikeDTO {
+        private int likeCount;
+        private boolean hasLikedYet = false;
+    }
+
+    @Data
+    public static class SendCommentLikeDTO {
+        @NotNull(message = "comment id is required")
+        private Integer commentId;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    public static class ListCommentLikeDTO {
+        private boolean hasLikedYet = false;
+        private Page<UserDTO> likedList;
+    }
 }

@@ -5,6 +5,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 
 import com.t1908e.memeportalapi.dto.CommentDTO;
 import com.t1908e.memeportalapi.dto.PostDTO;
+import com.t1908e.memeportalapi.service.CommentService;
 import com.t1908e.memeportalapi.service.PostService;
 import com.t1908e.memeportalapi.util.JwtUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.HashMap;
-import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/v1/posts")
@@ -27,6 +28,7 @@ import java.util.List;
 @CrossOrigin
 public class PostController {
     private final PostService postService;
+    private final CommentService commentService;
 
     @RequestMapping(value = "", method = RequestMethod.POST)
     public ResponseEntity<?> createPost(
@@ -150,7 +152,7 @@ public class PostController {
         String accessToken = token.replace("Bearer", "").trim();
         DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
         String username = decodedJWT.getSubject();
-        return postService.LikeAPost(sendPostLikeDTO.getPostId(), username);
+        return postService.likeAPost(sendPostLikeDTO.getPostId(), username);
     }
 
     @RequestMapping(value = "/{id}/like", method = RequestMethod.GET)
@@ -231,7 +233,7 @@ public class PostController {
         DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
         String username = decodedJWT.getSubject();
 
-        return postService.commentAPost(id, createCommentDTO, username);
+        return commentService.commentAPost(id, createCommentDTO, username);
     }
     @RequestMapping(value = "/{id}/comments", method = RequestMethod.GET)
     public ResponseEntity<?> getListComments(
@@ -244,7 +246,7 @@ public class PostController {
         if (page == null || page <= 0) page = 1;
         if (limit == null) limit = 30;
         if (sortBy == null) sortBy = "createdAt";
-        return postService.getListComments(id, page - 1, limit, sortBy, order);
+        return commentService.getListComments(id, page - 1, limit, sortBy, order);
     }
 
     @RequestMapping(value = "/comments/{id}/replyComments", method = RequestMethod.GET)
@@ -258,6 +260,79 @@ public class PostController {
         if (page == null || page <= 0) page = 1;
         if (limit == null) limit = 30;
         if (sortBy == null) sortBy = "createdAt";
-        return postService.getRepliedCommentOfAComment(id, page - 1, limit, sortBy, order);
+        return commentService.getRepliedCommentOfAComment(id, page - 1, limit, sortBy, order);
+    }
+
+    @RequestMapping(value = "/likeComment", method = RequestMethod.POST)
+    public ResponseEntity<?> likeComment(
+            @RequestBody CommentDTO.SendCommentLikeDTO sendCommentLikeDTO,
+            BindingResult bindingResult,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+        if (bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "like post failed");
+        }
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+        return commentService.likeAComment(sendCommentLikeDTO.getCommentId(), username);
+    }
+
+    @RequestMapping(value = "/comments/{id}/likeCount", method = RequestMethod.GET)
+    public ResponseEntity<?> getCommentLikeCount(@PathVariable(name = "id") int id, HttpServletRequest request) {
+        String username = null;
+        try {
+            String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                String token = authorizationHeader.replace("Bearer", "").trim();
+                DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(token);
+                username = decodedJWT.getSubject();
+            }
+        } catch (Exception exception) {
+            HashMap<String, Object> restResponse = new RESTResponse.CustomError()
+                    .setMessage("Decode jwt failed")
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
+        return commentService.getLikeCount(id, username);
+    }
+
+    @RequestMapping(value = "/comments/{id}/like", method = RequestMethod.GET)
+    public ResponseEntity<?> getCommentLikes(
+            @PathVariable(name = "id") int id,
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "order", required = false) String order,
+            @RequestParam(name = "sortBy", required = false) String sortBy,
+            HttpServletRequest request
+    ) {
+        if (page == null || page <= 0) page = 1;
+        if (limit == null) limit = 30;
+        if (sortBy == null) sortBy = "id";
+        String username = null;
+        try {
+            String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                String token = authorizationHeader.replace("Bearer", "").trim();
+                DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(token);
+                username = decodedJWT.getSubject();
+            }
+        } catch (Exception exception) {
+            HashMap<String, Object> restResponse = new RESTResponse.CustomError()
+                    .setMessage("Decode jwt failed")
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
+
+        return commentService.getCommentLikes(id, page - 1, limit, sortBy, order, username);
     }
 }
