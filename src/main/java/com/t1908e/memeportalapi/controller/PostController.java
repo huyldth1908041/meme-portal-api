@@ -3,6 +3,7 @@ package com.t1908e.memeportalapi.controller;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 
+import com.t1908e.memeportalapi.dto.CommentDTO;
 import com.t1908e.memeportalapi.dto.PostDTO;
 import com.t1908e.memeportalapi.service.PostService;
 import com.t1908e.memeportalapi.util.JwtUtil;
@@ -208,4 +209,55 @@ public class PostController {
         return postService.getTopCreator();
     }
 
+    @RequestMapping(value = "/{id}/comments", method = RequestMethod.POST)
+    public ResponseEntity<?> commentAPost(
+            @PathVariable(value = "id") int id,
+            @RequestBody @Valid CommentDTO.CreateCommentDTO createCommentDTO,
+            BindingResult bindingResult,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token
+    ) {
+        if (bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "comment post failed");
+        }
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+
+        return postService.commentAPost(id, createCommentDTO, username);
+    }
+    @RequestMapping(value = "/{id}/comments", method = RequestMethod.GET)
+    public ResponseEntity<?> getListComments(
+            @PathVariable(value = "id") int id,
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "order", required = false) String order,
+            @RequestParam(name = "sortBy", required = false) String sortBy
+    ) {
+        if (page == null || page <= 0) page = 1;
+        if (limit == null) limit = 30;
+        if (sortBy == null) sortBy = "createdAt";
+        return postService.getListComments(id, page - 1, limit, sortBy, order);
+    }
+
+    @RequestMapping(value = "/comments/{id}/replyComments", method = RequestMethod.GET)
+    public ResponseEntity<?> getListReplyComment(
+            @PathVariable(value = "id") int id,
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "order", required = false) String order,
+            @RequestParam(name = "sortBy", required = false) String sortBy
+    ) {
+        if (page == null || page <= 0) page = 1;
+        if (limit == null) limit = 30;
+        if (sortBy == null) sortBy = "createdAt";
+        return postService.getRepliedCommentOfAComment(id, page - 1, limit, sortBy, order);
+    }
 }

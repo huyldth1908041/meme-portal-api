@@ -1,14 +1,12 @@
 package com.t1908e.memeportalapi.service;
 
+import com.t1908e.memeportalapi.dto.CommentDTO;
 import com.t1908e.memeportalapi.dto.TopCreatorDTO;
 import com.t1908e.memeportalapi.dto.UserDTO;
 import com.t1908e.memeportalapi.entity.*;
-import com.t1908e.memeportalapi.repository.PostLikeRepository;
-import com.t1908e.memeportalapi.repository.UserRepository;
+import com.t1908e.memeportalapi.repository.*;
 import org.springframework.data.domain.*;
 import com.t1908e.memeportalapi.dto.PostDTO;
-import com.t1908e.memeportalapi.repository.CategoryRepository;
-import com.t1908e.memeportalapi.repository.PostRepository;
 import com.t1908e.memeportalapi.specification.PostSpecificationBuilder;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +29,7 @@ public class PostService {
     private final AuthenticationService authenticationService;
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
+    private final CommentRepository commentRepository;
 
     public ResponseEntity<?> savePost(PostDTO.CreatePostDTO postDTO, String creatorUsername) {
         HashMap<String, Object> restResponse = new HashMap<>();
@@ -229,7 +228,7 @@ public class PostService {
             User user = activeUsers.get(i);
             Set<Post> posts = user.getPosts();
             List<Post> activePosts = posts.stream().filter(item -> item.getStatus() > 0).collect(Collectors.toList());
-            if(activePosts.size() == 0) {
+            if (activePosts.size() == 0) {
                 continue;
             }
             userByPostsCount.put(activePosts.size(), user);
@@ -429,6 +428,133 @@ public class PostService {
                 .setMessage("Ok")
                 .setStatus(HttpStatus.OK.value())
                 .setData(postLikeDTO).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
+
+    public ResponseEntity<?> commentAPost(int postId,CommentDTO.CreateCommentDTO createCommentDTO, String username) {
+        HashMap<String, Object> restResponse = new HashMap<>();
+        User commenter = authenticationService.getAppUser(username);
+        if (commenter == null || commenter.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("username not found or has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        //get post
+        Optional<Post> postOptional = postRepository.findById(postId);
+        Post commentedPost = postOptional.orElse(null);
+        if (commentedPost == null || commentedPost.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("post not found or has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        try {
+            Comment comment = new Comment();
+            comment.setUser(commenter);
+            comment.setContent(createCommentDTO.getContent());
+            comment.setPost(commentedPost);
+            comment.setStatus(1);
+            comment.setCreatedAt(new Date());
+            comment.setUpdatedAt(new Date());
+            if (createCommentDTO.getReplyCommentId() != null) {
+                comment.setRepliedCommentId(createCommentDTO.getReplyCommentId());
+            }
+            Comment savedComment = commentRepository.save(comment);
+            restResponse = new RESTResponse.Success()
+                    .setMessage("Ok")
+                    .setStatus(HttpStatus.CREATED.value())
+                    .setData(new CommentDTO(savedComment, 0)).build();
+            return ResponseEntity.ok().body(restResponse);
+        } catch (Exception exception) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("save Like failed " + exception.getMessage())
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
+
+    }
+
+    public ResponseEntity<?> getListComments(
+            int postId,
+            Integer page,
+            Integer limit,
+            String sortBy,
+            String order
+    ) {
+        HashMap<String, Object> restResponse = new HashMap<>();
+        Optional<Post> postOptional = postRepository.findById(postId);
+        Post commentedPost = postOptional.orElse(null);
+        if (commentedPost == null || commentedPost.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("post not found or has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Sort.Direction direction;
+        if (order == null) {
+            direction = Sort.Direction.DESC;
+        } else if (order.equalsIgnoreCase("asc")) {
+            direction = Sort.Direction.ASC;
+        } else {
+            direction = Sort.Direction.DESC;
+        }
+        Pageable pageInfo = PageRequest.of(page, limit, Sort.by(direction, sortBy));
+        Page<Comment> resultComment = commentRepository.findAllByRepliedCommentIdAndPostId(0, postId, pageInfo);
+        Page<CommentDTO> dtoPage = resultComment.map(new Function<Comment, CommentDTO>() {
+            @Override
+            public CommentDTO apply(Comment comment) {
+                return new CommentDTO(comment, commentRepository.countRepliedComment(comment.getId()));
+            }
+        });
+        restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.CREATED.value())
+                .setData(dtoPage).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
+
+    public ResponseEntity<?> getRepliedCommentOfAComment(
+            int commentId, Integer page,
+            Integer limit,
+            String sortBy,
+            String order
+    ) {
+        HashMap<String, Object> restResponse = new HashMap<>();
+        Optional<Comment> byId = commentRepository.findById(commentId);
+        Comment comment = byId.orElse(null);
+        if (comment == null || comment.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("comment not found or has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+
+        Sort.Direction direction;
+        if (order == null) {
+            direction = Sort.Direction.DESC;
+        } else if (order.equalsIgnoreCase("asc")) {
+            direction = Sort.Direction.ASC;
+        } else {
+            direction = Sort.Direction.DESC;
+        }
+        Pageable pageInfo = PageRequest.of(page, limit, Sort.by(direction, sortBy));
+        Page<Comment> all = commentRepository.findAllByRepliedCommentId(commentId, pageInfo);
+        Page<CommentDTO> dtoPage = all.map(new Function<Comment, CommentDTO>() {
+            @Override
+            public CommentDTO apply(Comment comment) {
+                return new CommentDTO(comment, commentRepository.countRepliedComment(comment.getId()));
+            }
+        });
+        restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.CREATED.value())
+                .setData(dtoPage).build();
         return ResponseEntity.ok().body(restResponse);
     }
 }
