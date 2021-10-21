@@ -431,7 +431,7 @@ public class PostService {
         return ResponseEntity.ok().body(restResponse);
     }
 
-    public ResponseEntity<?> commentAPost(int postId,CommentDTO.CreateCommentDTO createCommentDTO, String username) {
+    public ResponseEntity<?> commentAPost(int postId, CommentDTO.CreateCommentDTO createCommentDTO, String username) {
         HashMap<String, Object> restResponse = new HashMap<>();
         User commenter = authenticationService.getAppUser(username);
         if (commenter == null || commenter.getStatus() < 0) {
@@ -460,6 +460,15 @@ public class PostService {
             comment.setCreatedAt(new Date());
             comment.setUpdatedAt(new Date());
             if (createCommentDTO.getReplyCommentId() != null) {
+                Optional<Comment> byId = commentRepository.findById(createCommentDTO.getReplyCommentId());
+                Comment parentComment = byId.orElse(null);
+                if (parentComment == null || parentComment.getStatus() < 0) {
+                    restResponse = new RESTResponse.CustomError()
+                            .setMessage("reply to a comment that does not exist or has been deleted")
+                            .setCode(HttpStatus.BAD_REQUEST.value())
+                            .build();
+                    return ResponseEntity.badRequest().body(restResponse);
+                }
                 comment.setRepliedCommentId(createCommentDTO.getReplyCommentId());
             }
             Comment savedComment = commentRepository.save(comment);
