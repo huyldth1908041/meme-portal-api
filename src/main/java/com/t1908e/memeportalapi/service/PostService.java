@@ -156,6 +156,9 @@ public class PostService {
         for (Map.Entry<String, Object> entry : params.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
+//            if (key.equals("lastCreateAtDay")) {
+//                builder.with("createAt", " >= :", value);
+//            }
             builder.with(key, ":", value);
         }
         Specification<Post> spec = builder.build();
@@ -428,6 +431,27 @@ public class PostService {
                 .setMessage("Ok")
                 .setStatus(HttpStatus.OK.value())
                 .setData(postLikeDTO).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
+
+    public ResponseEntity<?> listNewPosts(int days){
+        HashMap<String, Object> restResponse = new HashMap<>();
+
+
+        Date today = new Date();
+        Calendar c = Calendar.getInstance();
+        c.setTime(today);
+        c.add(Calendar.DATE, -days);  // number of days to add
+        Date value = c.getTime();
+        java.sql.Date sqlDate = new java.sql.Date(value.getTime());
+        ArrayList<Post> all = postRepository.findAllWithCreateAtBefore(sqlDate,1);
+        List<PostDTO> dtoList =  all.stream()
+                .map(item -> new PostDTO(item))
+                .collect(Collectors.toList());
+        restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData(dtoList).build();
         return ResponseEntity.ok().body(restResponse);
     }
 

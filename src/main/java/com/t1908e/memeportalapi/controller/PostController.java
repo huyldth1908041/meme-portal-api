@@ -30,6 +30,7 @@ public class PostController {
     private final PostService postService;
     private final CommentService commentService;
 
+
     @RequestMapping(value = "", method = RequestMethod.POST)
     public ResponseEntity<?> createPost(
             @Valid @RequestBody PostDTO.CreatePostDTO createData,

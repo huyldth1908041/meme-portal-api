@@ -11,9 +11,11 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
+
 
 public interface PostRepository extends JpaRepository<Post, Integer>, JpaSpecificationExecutor<Post> {
     Page<Post> findAll(Specification<Post> spec, Pageable pageable);
@@ -28,5 +30,10 @@ public interface PostRepository extends JpaRepository<Post, Integer>, JpaSpecifi
 
     @Query("SELECT post FROM Post post WHERE post.userId = :userId")
     List<Post> findAllByUserId(@Param(value = "userId") long userId);
+
+    @Query("select post from Post post where post.createdAt >= :createdAt and post.status = :status")
+    ArrayList<Post> findAllWithCreateAtBefore(
+            @Param(value = "createdAt") Date createdAt, @Param(value = "status") int status );
+
 }
 

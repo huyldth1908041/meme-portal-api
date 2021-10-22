@@ -170,6 +170,9 @@ public class UserService {
             if (key.equals("role")) {
                 continue;
             }
+//            if (key.equals("lastCreateAtDay")) {
+//                builder.with("createAt", " >= :", value);
+//            }
             builder.with(key, ":", value);
         }
         Specification<User> spec = builder.build();
@@ -224,5 +227,26 @@ public class UserService {
                 return cb.and();
             }
         };
+    }
+
+    public ResponseEntity<?> listNewUsers(int days){
+        HashMap<String, Object> restResponse = new HashMap<>();
+
+
+        Date today = new Date();
+        Calendar c = Calendar.getInstance();
+        c.setTime(today);
+        c.add(Calendar.DATE, -days);  // number of days to add
+        Date value = c.getTime();
+        java.sql.Date sqlDate = new java.sql.Date(value.getTime());
+        ArrayList<User> all = userRepository.findAllWithCreateAtBefore(sqlDate,1);
+        List<UserDTO> dtoList =  all.stream()
+                .map(item -> new UserDTO(item))
+                .collect(Collectors.toList());
+        restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData(dtoList).build();
+        return ResponseEntity.ok().body(restResponse);
     }
 }

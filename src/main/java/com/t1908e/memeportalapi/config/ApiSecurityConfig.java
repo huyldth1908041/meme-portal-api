@@ -43,7 +43,8 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/v1/register**", "/api/v1/register/*",
                         "/api/v1/login**", "/api/v1/login/*",
                         "/api/v1/token/refresh**", "/api/v1/token/refresh/*",
-                        "/api/v1/categories**", "/api/v1/categories/*")
+                        "/api/v1/categories**", "/api/v1/categories/*",
+                        "/api/v1/dashboard**", "/api/v1/dashboard/*")
                 .permitAll();
         http.authorizeRequests()
                 .antMatchers(HttpMethod.GET, "/api/v1/posts/**","/api/v1/users/**", "/api/v1/posts**")
