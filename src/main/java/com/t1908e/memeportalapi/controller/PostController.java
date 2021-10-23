@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.util.Date;
 import java.util.HashMap;
 
 
@@ -235,6 +236,7 @@ public class PostController {
 
         return commentService.commentAPost(id, createCommentDTO, username);
     }
+
     @RequestMapping(value = "/{id}/comments", method = RequestMethod.GET)
     public ResponseEntity<?> getListComments(
             @PathVariable(value = "id") int id,
@@ -335,4 +337,5 @@ public class PostController {
 
         return commentService.getCommentLikes(id, page - 1, limit, sortBy, order, username);
     }
+
 }
