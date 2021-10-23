@@ -1,12 +1,10 @@
 package com.t1908e.memeportalapi.service;
 
-import com.t1908e.memeportalapi.dto.CommentDTO;
-import com.t1908e.memeportalapi.dto.TopCreatorDTO;
-import com.t1908e.memeportalapi.dto.UserDTO;
+import com.t1908e.memeportalapi.dto.*;
 import com.t1908e.memeportalapi.entity.*;
 import com.t1908e.memeportalapi.repository.*;
+import com.t1908e.memeportalapi.util.FirebaseUtil;
 import org.springframework.data.domain.*;
-import com.t1908e.memeportalapi.dto.PostDTO;
 import com.t1908e.memeportalapi.specification.PostSpecificationBuilder;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import lombok.RequiredArgsConstructor;
@@ -70,6 +68,15 @@ public class PostService {
         newPost.setUser(creator);
         try {
             Post savedPost = postRepository.save(newPost);
+            if (savedPost.getStatus() == 0) {
+                NotificationDTO notification = new NotificationDTO();
+                notification.setContent("You have new post to verify");
+                notification.setThumbnail(savedPost.getImage());
+                notification.setStatus(1);
+                notification.setCreatedAt(new Date());
+                notification.setUrl("/post/".concat(String.valueOf(savedPost.getId())));
+                FirebaseUtil.sendNotification("admin@admin.com", notification);
+            }
             restResponse = new RESTResponse.Success()
                     .setMessage("success")
                     .setStatus(HttpStatus.CREATED.value())
@@ -183,6 +190,22 @@ public class PostService {
     }
 
     public ResponseEntity<?> verifyPosts(ArrayList<Integer> postIds) {
+        //get list users
+        List<Post> allById = postRepository.findAllById(postIds);
+        for (Post post : allById) {
+            if (post == null || post.getStatus() == 1) {
+                continue;
+            }
+            User user = post.getUser();
+            String username = user.getAccount().getUsername();
+            NotificationDTO notificationDTO = new NotificationDTO();
+            notificationDTO.setUrl("/post/".concat(String.valueOf(post.getId())));
+            notificationDTO.setContent("Your post ".concat(post.getTitle()).concat(" has been verified!"));
+            notificationDTO.setStatus(1);
+            notificationDTO.setThumbnail(post.getImage());
+            notificationDTO.setCreatedAt(new Date());
+            FirebaseUtil.sendNotification(username, notificationDTO);
+        }
         int recordsAffected = postRepository.changePostStatus(postIds, 1);// 1 -> ACTIVE
         HashMap<String, Object> restResponse = new RESTResponse.Success()
                 .setMessage("Ok")
@@ -291,6 +314,16 @@ public class PostService {
             PostDTO.PostLikeDTO postLikeDTO = new PostDTO.PostLikeDTO();
             postLikeDTO.setHasLikedYet(true);
             postLikeDTO.setLikeCount(post.getPostLikes().size());
+            //send notification when only when user like other user's post
+            if (liker.getId() != post.getUser().getId()) {
+                NotificationDTO notificationDTO = new NotificationDTO();
+                notificationDTO.setUrl("/post/".concat(String.valueOf(post.getId())));
+                notificationDTO.setContent(liker.getFullName().concat(" has liked your post"));
+                notificationDTO.setStatus(1);
+                notificationDTO.setThumbnail(post.getImage());
+                notificationDTO.setCreatedAt(new Date());
+                FirebaseUtil.sendNotification(post.getUser().getAccount().getUsername(), notificationDTO);
+            }
             restResponse = new RESTResponse.Success()
                     .setMessage("Ok")
                     .setStatus(HttpStatus.CREATED.value())
@@ -430,5 +463,6 @@ public class PostService {
                 .setData(postLikeDTO).build();
         return ResponseEntity.ok().body(restResponse);
     }
+
 
 }

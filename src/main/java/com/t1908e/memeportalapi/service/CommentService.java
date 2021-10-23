@@ -1,10 +1,12 @@
 package com.t1908e.memeportalapi.service;
 
 import com.t1908e.memeportalapi.dto.CommentDTO;
+import com.t1908e.memeportalapi.dto.NotificationDTO;
 import com.t1908e.memeportalapi.dto.PostDTO;
 import com.t1908e.memeportalapi.dto.UserDTO;
 import com.t1908e.memeportalapi.entity.*;
 import com.t1908e.memeportalapi.repository.*;
+import com.t1908e.memeportalapi.util.FirebaseUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -70,6 +72,31 @@ public class CommentService {
                 comment.setRepliedCommentId(createCommentDTO.getReplyCommentId());
             }
             Comment savedComment = commentRepository.save(comment);
+            NotificationDTO notificationDTO = new NotificationDTO();
+            if (savedComment.getRepliedCommentId() != 0) {
+                //reply a comment -> send notification for user has comment that be replied
+                //get user that has comment replied
+                Optional<Comment> byId = commentRepository.findById(savedComment.getRepliedCommentId());
+                Comment parentComment = byId.orElse(null);
+                if (parentComment.getUser().getId() != commenter.getId()) {
+                    notificationDTO.setUrl("/post/".concat(String.valueOf(commentedPost.getId())));
+                    notificationDTO.setContent(commenter.getFullName().concat(" has replied your comment"));
+                    notificationDTO.setStatus(1);
+                    notificationDTO.setThumbnail(commenter.getAvatar());
+                    notificationDTO.setCreatedAt(new Date());
+                    FirebaseUtil.sendNotification(parentComment.getUser().getAccount().getUsername(), notificationDTO);
+                }
+            } else {
+                //comment at a post -> send notification to creator
+                if (commenter.getId() != commentedPost.getUser().getId()) {
+                    notificationDTO.setUrl("/post/".concat(String.valueOf(commentedPost.getId())));
+                    notificationDTO.setContent(commenter.getFullName().concat(" has commented your post"));
+                    notificationDTO.setStatus(1);
+                    notificationDTO.setThumbnail(commenter.getAvatar());
+                    notificationDTO.setCreatedAt(new Date());
+                    FirebaseUtil.sendNotification(commentedPost.getUser().getAccount().getUsername(), notificationDTO);
+                }
+            }
             restResponse = new RESTResponse.Success()
                     .setMessage("Ok")
                     .setStatus(HttpStatus.CREATED.value())
@@ -203,6 +230,16 @@ public class CommentService {
             CommentDTO.CommentLikeDTO commentLikeDTO = new CommentDTO.CommentLikeDTO();
             commentLikeDTO.setHasLikedYet(true);
             commentLikeDTO.setLikeCount(comment.getCommentLikes().size());
+            //send notification
+            if(liker.getId() != comment.getUser().getId()) {
+                NotificationDTO notificationDTO = new NotificationDTO();
+                notificationDTO.setContent(liker.getFullName().concat(" has liked your comment"));
+                notificationDTO.setUrl("/post/".concat(String.valueOf(comment.getPost().getId())));
+                notificationDTO.setStatus(1);
+                notificationDTO.setThumbnail(liker.getAvatar());
+                notificationDTO.setCreatedAt(new Date());
+                FirebaseUtil.sendNotification(comment.getUser().getAccount().getUsername(), notificationDTO);
+            }
             restResponse = new RESTResponse.Success()
                     .setMessage("Ok")
                     .setStatus(HttpStatus.CREATED.value())
