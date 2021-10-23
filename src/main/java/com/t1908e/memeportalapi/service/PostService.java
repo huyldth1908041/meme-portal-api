@@ -320,7 +320,7 @@ public class PostService {
                 notificationDTO.setUrl("/post/".concat(String.valueOf(post.getId())));
                 notificationDTO.setContent(liker.getFullName().concat(" has liked your post"));
                 notificationDTO.setStatus(1);
-                notificationDTO.setThumbnail(post.getImage());
+                notificationDTO.setThumbnail(liker.getAvatar());
                 notificationDTO.setCreatedAt(new Date());
                 FirebaseUtil.sendNotification(post.getUser().getAccount().getUsername(), notificationDTO);
             }
