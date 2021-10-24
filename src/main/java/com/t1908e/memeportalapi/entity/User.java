@@ -52,4 +52,29 @@ public class User {
     @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, mappedBy = "user", fetch = FetchType.LAZY)
     private Set<Report> reports;
 
+    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<Invoice> invoices;
+
+    public double addToken(double amount) {
+        double tokenBalance = this.getTokenBalance();
+        if (amount < 0) {
+            return tokenBalance;
+        }
+        double newBalance = tokenBalance + amount;
+        this.setTokenBalance(newBalance);
+        return newBalance;
+    }
+
+    public double subtractToken(double amount) {
+        double tokenBalance = this.getTokenBalance();
+        if (amount < 0) {
+            return tokenBalance;
+        }
+        if (amount > tokenBalance) {
+            return tokenBalance;
+        }
+        double newBalance = tokenBalance - amount;
+        this.setTokenBalance(newBalance);
+        return newBalance;
+    }
 }
