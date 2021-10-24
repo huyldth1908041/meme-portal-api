@@ -1,17 +1,14 @@
 package com.t1908e.memeportalapi.service;
 
-import com.t1908e.memeportalapi.dto.PostDTO;
+import com.t1908e.memeportalapi.dto.TopTokenDTO;
 import com.t1908e.memeportalapi.dto.UserDTO;
 import com.t1908e.memeportalapi.entity.Account;
-import com.t1908e.memeportalapi.entity.Post;
 import com.t1908e.memeportalapi.entity.Role;
 import com.t1908e.memeportalapi.entity.User;
 import com.t1908e.memeportalapi.repository.AccountRepository;
 import com.t1908e.memeportalapi.repository.PostRepository;
 import com.t1908e.memeportalapi.repository.RoleRepository;
 import com.t1908e.memeportalapi.repository.UserRepository;
-import com.t1908e.memeportalapi.specification.PostSpecificationBuilder;
-import com.t1908e.memeportalapi.specification.UserSpecification;
 import com.t1908e.memeportalapi.specification.UserSpecificationBuilder;
 import com.t1908e.memeportalapi.util.ConvertUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
@@ -224,5 +221,20 @@ public class UserService {
                 return cb.and();
             }
         };
+    }
+
+    public ResponseEntity<?> getTopTokenOwner() {
+        Pageable topFive = PageRequest.of(0, 5);
+        List<User> topToken = userRepository
+                .findByStatusGreaterThanAndTokenBalanceGreaterThanOrderByTokenBalanceDesc(0, 0, topFive);
+        List<TopTokenDTO> topTokenDTOList = new ArrayList<>();
+        for (User topUser : topToken) {
+            TopTokenDTO topTokenDTO = new TopTokenDTO(new UserDTO(topUser), topUser.getTokenBalance());
+            topTokenDTOList.add(topTokenDTO);
+        }
+        return ResponseEntity.ok().body(new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData(topTokenDTOList).build());
     }
 }
