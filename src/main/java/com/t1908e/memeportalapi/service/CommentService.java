@@ -84,7 +84,7 @@ public class CommentService {
                     //send token: post creator: 2, commenter: 2, replier: 2
                     User parentCommentUser = parentComment.getUser();
                     //check if post creator is replier
-                    if(postCreator.getId() != commenter.getId()); {
+                    if(postCreator.getId() != commenter.getId()) {
                         postCreator.addToken(2);
                         Invoice postCreatorInvoice = new Invoice("token received", "post commented", 2, postCreator);
                         userRepository.save(postCreator);
