@@ -98,7 +98,7 @@ public class CommentService {
                     invoiceRepository.save(postCreatorInvoice);
                     //send notification
                     notificationDTO.setUrl("/post/".concat(String.valueOf(commentedPost.getId())));
-                    notificationDTO.setContent(commenter.getFullName().concat(" has replied your comment"));
+                    notificationDTO.setContent(commenter.getFullName().concat(" has replied your comment and ypu gained 2 tokens!"));
                     notificationDTO.setStatus(1);
                     notificationDTO.setThumbnail(commenter.getAvatar());
                     notificationDTO.setCreatedAt(new Date());
@@ -119,7 +119,7 @@ public class CommentService {
                     invoiceRepository.save(postCreatorInvoice);
                     //send notification
                     notificationDTO.setUrl("/post/".concat(String.valueOf(commentedPost.getId())));
-                    notificationDTO.setContent(commenter.getFullName().concat(" has commented your post"));
+                    notificationDTO.setContent(commenter.getFullName().concat(" has commented your post and you gained 2 tokens"));
                     notificationDTO.setStatus(1);
                     notificationDTO.setThumbnail(commenter.getAvatar());
                     notificationDTO.setCreatedAt(new Date());
