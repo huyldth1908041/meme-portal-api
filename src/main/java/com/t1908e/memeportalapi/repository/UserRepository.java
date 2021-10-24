@@ -16,4 +16,6 @@ public interface UserRepository extends JpaRepository<User, Long> , JpaSpecifica
 
     List<User> findAllByStatus(int status);
 
+    List<User> findByStatusGreaterThanAndTokenBalanceGreaterThanOrderByTokenBalanceDesc(int status, double token, Pageable pageable);
+
 }

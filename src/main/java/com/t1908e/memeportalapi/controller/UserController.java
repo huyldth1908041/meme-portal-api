@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.method.P;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +22,7 @@ import java.util.HashMap;
 @CrossOrigin
 public class UserController {
     private final UserService userService;
+
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     public ResponseEntity<?> getUserDetail(@PathVariable(name = "id") long id) {
         return userService.getUserDetail(id);
@@ -34,7 +34,7 @@ public class UserController {
             @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
             @RequestBody @Valid UserDTO.UpdateUserProfileDTO userProfileDTO,
             BindingResult bindingResult) {
-        if(bindingResult.hasErrors()) {
+        if (bindingResult.hasErrors()) {
             return RESTUtil.getValidationErrorsResponse(bindingResult, "Update user failed");
         }
         if (token == null || !token.startsWith("Bearer ")) {
@@ -50,6 +50,7 @@ public class UserController {
         String username = decodedJWT.getSubject();
         return userService.updateUser(id, userProfileDTO, username);
     }
+
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deActiveUser(@PathVariable(name = "id") long id) {
         return userService.deActiveUser(id);
@@ -83,5 +84,10 @@ public class UserController {
         if (limit == null) limit = 30;
         if (sortBy == null) sortBy = "id";
         return userService.searchListUsers(params, page - 1, limit, sortBy, order);
+    }
+
+    @RequestMapping(value = "/topToken", method = RequestMethod.GET)
+    public ResponseEntity<?> getTopTokenOwner() {
+        return userService.getTopTokenOwner();
     }
 }
