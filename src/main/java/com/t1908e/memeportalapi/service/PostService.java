@@ -27,7 +27,7 @@ public class PostService {
     private final AuthenticationService authenticationService;
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
-    private final CommentRepository commentRepository;
+    private final InvoiceRepository invoiceRepository;
 
     public ResponseEntity<?> savePost(PostDTO.CreatePostDTO postDTO, String creatorUsername) {
         HashMap<String, Object> restResponse = new HashMap<>();
@@ -196,15 +196,34 @@ public class PostService {
             if (post == null || post.getStatus() == 1) {
                 continue;
             }
-            User user = post.getUser();
-            String username = user.getAccount().getUsername();
-            NotificationDTO notificationDTO = new NotificationDTO();
-            notificationDTO.setUrl("/post/".concat(String.valueOf(post.getId())));
-            notificationDTO.setContent("Your post ".concat(post.getTitle()).concat(" has been verified!"));
-            notificationDTO.setStatus(1);
-            notificationDTO.setThumbnail(post.getImage());
-            notificationDTO.setCreatedAt(new Date());
-            FirebaseUtil.sendNotification(username, notificationDTO);
+            try {
+                User user = post.getUser();
+                String username = user.getAccount().getUsername();
+                //send token
+                double newTokenBalance = user.addToken(20);
+                userRepository.save(user);
+                Invoice invoice = new Invoice();
+                invoice.setAmount(20);
+                invoice.setContent("Post verified");
+                invoice.setName("Token received");
+                invoice.setCreatedAt(new Date());
+                invoice.setUpdatedAt(new Date());
+                invoice.setStatus(1);
+                invoice.setUser(user);
+                invoiceRepository.save(invoice);
+                //send notification
+                NotificationDTO notificationDTO = new NotificationDTO();
+                notificationDTO.setUrl("/post/".concat(String.valueOf(post.getId())));
+                notificationDTO.setContent("Your post ".concat(post.getTitle())
+                        .concat(" has been verified! and you gained 20 tokens"));
+                notificationDTO.setStatus(1);
+                notificationDTO.setThumbnail(post.getImage());
+                notificationDTO.setCreatedAt(new Date());
+                FirebaseUtil.sendNotification(username, notificationDTO);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+                continue;
+            }
         }
         int recordsAffected = postRepository.changePostStatus(postIds, 1);// 1 -> ACTIVE
         HashMap<String, Object> restResponse = new RESTResponse.Success()
@@ -314,15 +333,27 @@ public class PostService {
             PostDTO.PostLikeDTO postLikeDTO = new PostDTO.PostLikeDTO();
             postLikeDTO.setHasLikedYet(true);
             postLikeDTO.setLikeCount(post.getPostLikes().size());
-            //send notification when only when user like other user's post
+            //send notification and token when only when user like other user's post
             if (liker.getId() != post.getUser().getId()) {
+                //send token: post creator 5 token, liker 1 token
+                User postCreator = post.getUser();
+                postCreator.addToken(5);
+                liker.addToken(1);
+                userRepository.save(postCreator);
+                userRepository.save(liker);
+                //save invoices
+                Invoice postCreatorInvoice = new Invoice("token received", "post liked", 5, postCreator);
+                Invoice likerInvoice = new Invoice("token received", "like a post", 1, liker);
+                invoiceRepository.save(postCreatorInvoice);
+                invoiceRepository.save(likerInvoice);
+                //send notification
                 NotificationDTO notificationDTO = new NotificationDTO();
                 notificationDTO.setUrl("/post/".concat(String.valueOf(post.getId())));
-                notificationDTO.setContent(liker.getFullName().concat(" has liked your post"));
+                notificationDTO.setContent(liker.getFullName().concat(" has liked your post and you received 5 token !"));
                 notificationDTO.setStatus(1);
                 notificationDTO.setThumbnail(liker.getAvatar());
                 notificationDTO.setCreatedAt(new Date());
-                FirebaseUtil.sendNotification(post.getUser().getAccount().getUsername(), notificationDTO);
+                FirebaseUtil.sendNotification(postCreator.getAccount().getUsername(), notificationDTO);
             }
             restResponse = new RESTResponse.Success()
                     .setMessage("Ok")

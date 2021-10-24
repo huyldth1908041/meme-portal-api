@@ -30,6 +30,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final UserRepository userRepository;
+    private final InvoiceRepository invoiceRepository;
 
     public ResponseEntity<?> commentAPost(int postId, CommentDTO.CreateCommentDTO createCommentDTO, String username) {
         HashMap<String, Object> restResponse = new HashMap<>();
@@ -51,6 +52,7 @@ public class CommentService {
                     .build();
             return ResponseEntity.badRequest().body(restResponse);
         }
+        User postCreator = commentedPost.getUser();
         try {
             Comment comment = new Comment();
             comment.setUser(commenter);
@@ -79,16 +81,43 @@ public class CommentService {
                 Optional<Comment> byId = commentRepository.findById(savedComment.getRepliedCommentId());
                 Comment parentComment = byId.orElse(null);
                 if (parentComment.getUser().getId() != commenter.getId()) {
+                    //send token: post creator: 2, commenter: 2, replier: 2
+                    User parentCommentUser = parentComment.getUser();
+                    postCreator.addToken(2);
+                    commenter.addToken(2);
+                    parentCommentUser.addToken(2);
+                    userRepository.save(postCreator);
+                    userRepository.save(commenter);
+                    userRepository.save(parentCommentUser);
+                    //save invoices
+                    Invoice replierInvoice = new Invoice("token received", "reply a comment", 2, commenter);
+                    Invoice commenterInvoice = new Invoice("token received", "comment replied", 2, parentCommentUser);
+                    Invoice postCreatorInvoice = new Invoice("token received", "post commented", 2, postCreator);
+                    invoiceRepository.save(replierInvoice);
+                    invoiceRepository.save(commenterInvoice);
+                    invoiceRepository.save(postCreatorInvoice);
+                    //send notification
                     notificationDTO.setUrl("/post/".concat(String.valueOf(commentedPost.getId())));
                     notificationDTO.setContent(commenter.getFullName().concat(" has replied your comment"));
                     notificationDTO.setStatus(1);
                     notificationDTO.setThumbnail(commenter.getAvatar());
                     notificationDTO.setCreatedAt(new Date());
-                    FirebaseUtil.sendNotification(parentComment.getUser().getAccount().getUsername(), notificationDTO);
+                    FirebaseUtil.sendNotification(parentCommentUser.getAccount().getUsername(), notificationDTO);
                 }
             } else {
-                //comment at a post -> send notification to creator
                 if (commenter.getId() != commentedPost.getUser().getId()) {
+                    //comment at a post -> send notification to creator
+                    //send token: post creator: 2 commenter: 2
+                    postCreator.addToken(2);
+                    commenter.addToken(2);
+                    userRepository.save(postCreator);
+                    userRepository.save(commenter);
+                    //save invoice
+                    Invoice commenterInvoice = new Invoice("token received", "comment a post", 2, commenter);
+                    Invoice postCreatorInvoice = new Invoice("token received", "post commented", 2, postCreator);
+                    invoiceRepository.save(commenterInvoice);
+                    invoiceRepository.save(postCreatorInvoice);
+                    //send notification
                     notificationDTO.setUrl("/post/".concat(String.valueOf(commentedPost.getId())));
                     notificationDTO.setContent(commenter.getFullName().concat(" has commented your post"));
                     notificationDTO.setStatus(1);
@@ -230,15 +259,27 @@ public class CommentService {
             CommentDTO.CommentLikeDTO commentLikeDTO = new CommentDTO.CommentLikeDTO();
             commentLikeDTO.setHasLikedYet(true);
             commentLikeDTO.setLikeCount(comment.getCommentLikes().size());
-            //send notification
-            if(liker.getId() != comment.getUser().getId()) {
+            //send notification and token
+            if (liker.getId() != comment.getUser().getId()) {
+                //send token 2 for commenter 1 for liker
+                User commenter = comment.getUser();
+                commenter.addToken(2);
+                liker.addToken(1);
+                userRepository.save(commenter);
+                userRepository.save(liker);
+                //save invoice
+                Invoice commenterInvoice = new Invoice("token received", "comment liked", 2, commenter);
+                Invoice likerInvoice = new Invoice("token received", "like a comment", 1, liker);
+                invoiceRepository.save(commenterInvoice);
+                invoiceRepository.save(likerInvoice);
+                //send notification
                 NotificationDTO notificationDTO = new NotificationDTO();
-                notificationDTO.setContent(liker.getFullName().concat(" has liked your comment"));
+                notificationDTO.setContent(liker.getFullName().concat(" has liked your comment and you gained 2 tokens"));
                 notificationDTO.setUrl("/post/".concat(String.valueOf(comment.getPost().getId())));
                 notificationDTO.setStatus(1);
                 notificationDTO.setThumbnail(liker.getAvatar());
                 notificationDTO.setCreatedAt(new Date());
-                FirebaseUtil.sendNotification(comment.getUser().getAccount().getUsername(), notificationDTO);
+                FirebaseUtil.sendNotification(commenter.getAccount().getUsername(), notificationDTO);
             }
             restResponse = new RESTResponse.Success()
                     .setMessage("Ok")
