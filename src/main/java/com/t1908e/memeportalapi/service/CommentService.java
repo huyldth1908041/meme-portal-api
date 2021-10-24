@@ -83,19 +83,23 @@ public class CommentService {
                 if (parentComment.getUser().getId() != commenter.getId()) {
                     //send token: post creator: 2, commenter: 2, replier: 2
                     User parentCommentUser = parentComment.getUser();
-                    postCreator.addToken(2);
+                    //check if post creator is replier
+                    if(postCreator.getId() != commenter.getId()); {
+                        postCreator.addToken(2);
+                        Invoice postCreatorInvoice = new Invoice("token received", "post commented", 2, postCreator);
+                        userRepository.save(postCreator);
+                        invoiceRepository.save(postCreatorInvoice);
+                    }
                     commenter.addToken(2);
                     parentCommentUser.addToken(2);
-                    userRepository.save(postCreator);
                     userRepository.save(commenter);
                     userRepository.save(parentCommentUser);
                     //save invoices
                     Invoice replierInvoice = new Invoice("token received", "reply a comment", 2, commenter);
                     Invoice commenterInvoice = new Invoice("token received", "comment replied", 2, parentCommentUser);
-                    Invoice postCreatorInvoice = new Invoice("token received", "post commented", 2, postCreator);
+
                     invoiceRepository.save(replierInvoice);
                     invoiceRepository.save(commenterInvoice);
-                    invoiceRepository.save(postCreatorInvoice);
                     //send notification
                     notificationDTO.setUrl("/post/".concat(String.valueOf(commentedPost.getId())));
                     notificationDTO.setContent(commenter.getFullName().concat(" has replied your comment and ypu gained 2 tokens!"));
