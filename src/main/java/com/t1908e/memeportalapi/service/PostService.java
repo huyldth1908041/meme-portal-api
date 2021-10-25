@@ -263,38 +263,22 @@ public class PostService {
     }
 
     public ResponseEntity<?> getTopCreator() {
-        List<User> activeUsers = userRepository.findAllByStatus(1);
-        HashMap<Integer, User> userByPostsCount = new HashMap<>();
+        List<User> topCreators = userRepository.findTopCreator();
+        List<TopCreatorDTO> topCreatorDTOList = new ArrayList<>();
         //O(n^2)
-        for (int i = 0; i < activeUsers.size(); i++) {
-            User user = activeUsers.get(i);
-            Set<Post> posts = user.getPosts();
+        for (User topCreator : topCreators) {
+            Set<Post> posts = topCreator.getPosts();
             List<Post> activePosts = posts.stream().filter(item -> item.getStatus() > 0).collect(Collectors.toList());
-            if (activePosts.size() == 0) {
-                continue;
-            }
-            userByPostsCount.put(activePosts.size(), user);
-        }
-        TreeMap<Integer, User> sorted = new TreeMap<>(Collections.reverseOrder());
-        //O(Log n)
-        sorted.putAll(userByPostsCount);
-        ArrayList<TopCreatorDTO> topCreatorDTOs = new ArrayList<>();
-        //O(n)
-        for (Map.Entry<Integer, User> entry : sorted.entrySet()) {
-            Integer count = entry.getKey();
-            User user = entry.getValue();
-            if (topCreatorDTOs.size() == 5) {
-                break;
-            }
-            topCreatorDTOs.add(new TopCreatorDTO(user, count));
+            TopCreatorDTO topCreatorDTO = new TopCreatorDTO(topCreator, activePosts.size());
+            topCreatorDTOList.add(topCreatorDTO);
         }
         HashMap<String, Object> restResponse = new RESTResponse.Success()
                 .setMessage("Ok")
                 .setStatus(HttpStatus.OK.value())
-                .setData(topCreatorDTOs).build();
+                .setData(topCreatorDTOList).build();
         return ResponseEntity.ok().body(restResponse);
-    }
 
+    }
     public ResponseEntity<?> likeAPost(int postId, String username) {
         HashMap<String, Object> restResponse = new HashMap<>();
         //save like post

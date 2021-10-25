@@ -1,6 +1,14 @@
 package com.t1908e.memeportalapi.dto;
 
 import com.t1908e.memeportalapi.entity.User;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import javax.persistence.EntityResult;
+import javax.persistence.FieldResult;
+import javax.persistence.SqlResultSetMapping;
 
 public class TopCreatorDTO {
     private UserDTO user;
@@ -22,4 +30,5 @@ public class TopCreatorDTO {
     public int getPostCounts() {
         return postCounts;
     }
+
 }
