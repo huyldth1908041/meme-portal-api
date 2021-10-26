@@ -42,4 +42,25 @@ public class TokenController {
         if (sortBy == null) sortBy = "createdAt";
         return tokenService.getInvoicesByUser(username, page - 1, limit, sortBy, order);
     }
+
+    @RequestMapping(value = "/history", method = RequestMethod.POST)
+    public ResponseEntity<?> pushMemeByToken(
+            @RequestParam(name = "postId", required = false) Integer postId,
+            @RequestParam(name = "userId", required = false) Integer userId,
+            @RequestParam(name = "amountOfToken", required = false) Integer amountOfToken,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token
+    ) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+        return tokenService.pushMemeByToken(username, postId, userId, amountOfToken);
+    }
 }
