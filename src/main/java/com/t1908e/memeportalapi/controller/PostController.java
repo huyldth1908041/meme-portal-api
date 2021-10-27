@@ -7,6 +7,7 @@ import com.t1908e.memeportalapi.dto.CommentDTO;
 import com.t1908e.memeportalapi.dto.PostDTO;
 import com.t1908e.memeportalapi.service.CommentService;
 import com.t1908e.memeportalapi.service.PostService;
+import com.t1908e.memeportalapi.service.SharePostService;
 import com.t1908e.memeportalapi.util.JwtUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import com.t1908e.memeportalapi.util.RESTUtil;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 public class PostController {
     private final PostService postService;
     private final CommentService commentService;
+    private final SharePostService sharePostService;
 
     @RequestMapping(value = "", method = RequestMethod.POST)
     public ResponseEntity<?> createPost(
@@ -337,4 +339,22 @@ public class PostController {
         return commentService.getCommentLikes(id, page - 1, limit, sortBy, order, username);
     }
 
+    @RequestMapping(value = "/{id}/share", method = RequestMethod.POST)
+    public ResponseEntity<?> shareAPost(
+            @PathVariable(name = "id") int id,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token
+    ) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+        return sharePostService.saveShare(username, id);
+    }
 }
