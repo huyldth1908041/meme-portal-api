@@ -357,4 +357,23 @@ public class PostController {
         String username = decodedJWT.getSubject();
         return sharePostService.saveShare(username, id);
     }
+
+    @RequestMapping(value = "/{id}/checkShare", method = RequestMethod.POST)
+    public ResponseEntity<?> checkShare(
+            @PathVariable(name = "id") int id,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token
+    ) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+        return sharePostService.checkShare(username, id);
+    }
 }

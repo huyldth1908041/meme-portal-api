@@ -107,6 +107,50 @@ public class SharePostService {
                     .build();
             return ResponseEntity.internalServerError().body(restResponse);
         }
+    }
 
+    public ResponseEntity<?> checkShare(String username, int postId) {
+        HashMap<String, Object> restResponse;
+        //save share post
+        User sharer = authenticationService.getAppUser(username);
+        if (sharer == null || sharer.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("username not found or has been deactive")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Optional<Post> postOptional = postRepository.findById(postId);
+        if (!postOptional.isPresent()) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("username not found or has been deactive")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Post sharedPost = postOptional.get();
+        //Share post once a day
+        List<PostShare> sharedList = postShareRepository.findAllByPostIdAndUserIdOrderByCreatedAtDesc(sharedPost.getId(), sharer.getId());
+        if(sharedList != null && !sharedList.isEmpty()) {
+            Date lastSharedTime = sharedList.get(0).getCreatedAt();
+            ShareDTO.CheckShareDTO checkShareDTO;
+            if(new Date().getTime() - lastSharedTime.getTime() <= 1000 * 60 * 60 * 24) {
+                checkShareDTO = new ShareDTO.CheckShareDTO(false);
+            } else {
+                checkShareDTO = new ShareDTO.CheckShareDTO(true);
+            }
+            restResponse = new RESTResponse.Success()
+                    .setMessage("Ok")
+                    .setData(checkShareDTO)
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        } else {
+            ShareDTO.CheckShareDTO checkShareDTO = new ShareDTO.CheckShareDTO(true);
+            restResponse = new RESTResponse.Success()
+                    .setMessage("Ok")
+                    .setData(checkShareDTO)
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
     }
 }
