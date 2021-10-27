@@ -44,6 +44,9 @@ public class Post {
     @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     private Set<PostLike> postLikes;
 
+    @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    private Set<PostShare> postShares;
+
 
     public void addPostLike(PostLike postLike) {
         if (this.postLikes == null) {
