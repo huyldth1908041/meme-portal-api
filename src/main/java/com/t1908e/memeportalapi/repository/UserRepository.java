@@ -20,9 +20,9 @@ public interface UserRepository extends JpaRepository<User, Long> , JpaSpecifica
 
     List<User> findByStatusGreaterThanAndTokenBalanceGreaterThanOrderByTokenBalanceDesc(int status, double token, Pageable pageable);
 
-    @Query(nativeQuery = true, value = "SELECT user.*, COUNT(post.id) AS post_count " +
+    @Query(nativeQuery = true, value = "SELECT user.id, user.full_name, user.avatar, COUNT(post.id) AS post_count " +
             "FROM user INNER JOIN post ON user.id = post.user_id " +
             "WHERE user.status > 0 AND post.status > 0 " +
             "GROUP BY user.id ORDER BY post_count DESC LIMIT 5")
-    List<User> findTopCreator();
+    List<Object[]> findTopCreator();
 }

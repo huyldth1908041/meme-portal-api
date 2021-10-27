@@ -1,34 +1,28 @@
 package com.t1908e.memeportalapi.dto;
 
-import com.t1908e.memeportalapi.entity.User;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
-import javax.persistence.EntityResult;
-import javax.persistence.FieldResult;
-import javax.persistence.SqlResultSetMapping;
+import java.math.BigInteger;
 
+
+@Getter
+@Setter
+@NoArgsConstructor
 public class TopCreatorDTO {
-    private UserDTO user;
+    private TopCreatorUser user;
     private int postCounts;
 
-    public TopCreatorDTO(UserDTO user, int postCounts) {
-        this.user = user;
+    public TopCreatorDTO(long id, String fullName, String avatar, int postCounts) {
         this.postCounts = postCounts;
-    }
-    public TopCreatorDTO(User user, int postCounts) {
-        this.user = new UserDTO(user);
-        this.postCounts = postCounts;
+        this.user = new TopCreatorUser(fullName, avatar, id);
     }
 
-    public UserDTO getUser() {
-        return user;
-    }
-
-    public int getPostCounts() {
-        return postCounts;
+    @Data
+    @AllArgsConstructor
+    private static class TopCreatorUser {
+        private String fullName;
+        private String avatar;
+        private long id;
     }
 
 }

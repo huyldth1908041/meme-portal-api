@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -263,22 +264,24 @@ public class PostService {
     }
 
     public ResponseEntity<?> getTopCreator() {
-        List<User> topCreators = userRepository.findTopCreator();
-        List<TopCreatorDTO> topCreatorDTOList = new ArrayList<>();
-        //O(n^2)
-        for (User topCreator : topCreators) {
-            Set<Post> posts = topCreator.getPosts();
-            List<Post> activePosts = posts.stream().filter(item -> item.getStatus() > 0).collect(Collectors.toList());
-            TopCreatorDTO topCreatorDTO = new TopCreatorDTO(topCreator, activePosts.size());
-            topCreatorDTOList.add(topCreatorDTO);
+        List<Object[]> queryResults = userRepository.findTopCreator();
+        List<TopCreatorDTO> topCreatorDTOS = new ArrayList<>();
+        for (Object[] result : queryResults) {
+            BigInteger userId = (BigInteger) result[0];
+            String fullName = String.valueOf(result[1]);
+            String avatar = String.valueOf(result[2]);
+            BigInteger postCount = (BigInteger) result[3];
+            TopCreatorDTO topCreatorDTO = new TopCreatorDTO(userId.longValue(), fullName, avatar, postCount.intValue());
+            topCreatorDTOS.add(topCreatorDTO);
         }
         HashMap<String, Object> restResponse = new RESTResponse.Success()
                 .setMessage("Ok")
                 .setStatus(HttpStatus.OK.value())
-                .setData(topCreatorDTOList).build();
+                .setData(topCreatorDTOS).build();
         return ResponseEntity.ok().body(restResponse);
 
     }
+
     public ResponseEntity<?> likeAPost(int postId, String username) {
         HashMap<String, Object> restResponse = new HashMap<>();
         //save like post
