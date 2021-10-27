@@ -143,14 +143,14 @@ public class SharePostService {
                     .setMessage("Ok")
                     .setData(checkShareDTO)
                     .build();
-            return ResponseEntity.badRequest().body(restResponse);
+            return ResponseEntity.ok().body(restResponse);
         } else {
             ShareDTO.CheckShareDTO checkShareDTO = new ShareDTO.CheckShareDTO(true);
             restResponse = new RESTResponse.Success()
                     .setMessage("Ok")
                     .setData(checkShareDTO)
                     .build();
-            return ResponseEntity.badRequest().body(restResponse);
+            return ResponseEntity.ok().body(restResponse);
         }
     }
 }
