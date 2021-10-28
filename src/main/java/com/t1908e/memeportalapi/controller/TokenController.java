@@ -74,7 +74,7 @@ public class TokenController {
         transactionDTO.setTargetId(transferTokenDTO.getReceiverId());
         transactionDTO.setAmount(transferTokenDTO.getAmount());
         transactionDTO.setReason(transferTokenDTO.getReason());
-        transactionDTO.setType(TransactionType.BUY_DISPLAY_NAME_COLOR);
+        transactionDTO.setType(TransactionType.TRANSFER);
         return tokenService.createTransaction(transactionDTO, username);
     }
 
