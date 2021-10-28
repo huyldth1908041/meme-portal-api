@@ -147,14 +147,14 @@ public class TokenService {
             String verifyCode = RandomUtil.generateVerifyCode();
             transaction.setVerifyCode(verifyCode);
             //send sms
-            String message = "your verify code is ".concat(savedTx.getVerifyCode());
+            String message = "your verify code is ".concat(verifyCode);
             twilioSmsSender.sendSms(new SmsRequest(creator.getPhone(), message));
             //save transaction
             Transaction savedTx = transactionRepository.save(transaction);
             restResponse = new RESTResponse.Success()
                     .setMessage("A verify code has sent to user phone")
                     .setStatus(HttpStatus.OK.value())
-                    .setData(new TransactionDTO(transaction)).build();
+                    .setData(new TransactionDTO(savedTx)).build();
             return ResponseEntity.ok().body(restResponse);
 
         } catch (Exception exception) {
