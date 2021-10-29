@@ -55,9 +55,9 @@ public class SharePostService {
         Post sharedPost = postOptional.get();
         //Share post once a day
         List<PostShare> sharedList = postShareRepository.findAllByPostIdAndUserIdOrderByCreatedAtDesc(sharedPost.getId(), sharer.getId());
-        if(sharedList != null && !sharedList.isEmpty()) {
+        if (sharedList != null && !sharedList.isEmpty()) {
             Date lastSharedTime = sharedList.get(0).getCreatedAt();
-            if(new Date().getTime() - lastSharedTime.getTime() <= 1000 * 60 * 60 * 24) {
+            if (new Date().getTime() - lastSharedTime.getTime() <= 1000 * 60 * 60 * 24) {
                 restResponse = new RESTResponse.CustomError()
                         .setMessage("You has reach the share limit for this post today, try again tomorrow")
                         .setCode(HttpStatus.BAD_REQUEST.value())
@@ -72,7 +72,8 @@ public class SharePostService {
             postShare.setPost(sharedPost);
             postShareRepository.save(postShare);
             //send notification and token
-            if(sharer.getId() != sharedPost.getUser().getId()) {
+
+            if (sharer.getId() != sharedPost.getUser().getId()) {
                 //send token: sharer: 3 token, post creator 3 token
                 User postCreator = sharedPost.getUser();
                 postCreator.addToken(3);
@@ -95,6 +96,16 @@ public class SharePostService {
             }
             ShareDTO shareDTO = new ShareDTO();
             shareDTO.setShareCount(sharedPost.getPostShares().size());
+            if (sharedPost.getStatus() != 2) {
+                //subtract token
+                double newBalance = sharedPost.subTractToken(100);
+                postRepository.save(sharedPost);
+                if (newBalance <= 0) {
+                    sharedPost.setStatus(2);
+                    postRepository.save(sharedPost);
+                }
+            }
+
             restResponse = new RESTResponse.Success()
                     .setMessage("Ok")
                     .setStatus(HttpStatus.CREATED.value())
@@ -131,10 +142,10 @@ public class SharePostService {
         Post sharedPost = postOptional.get();
         //Share post once a day
         List<PostShare> sharedList = postShareRepository.findAllByPostIdAndUserIdOrderByCreatedAtDesc(sharedPost.getId(), sharer.getId());
-        if(sharedList != null && !sharedList.isEmpty()) {
+        if (sharedList != null && !sharedList.isEmpty()) {
             Date lastSharedTime = sharedList.get(0).getCreatedAt();
             ShareDTO.CheckShareDTO checkShareDTO;
-            if(new Date().getTime() - lastSharedTime.getTime() <= 1000 * 60 * 60 * 24) {
+            if (new Date().getTime() - lastSharedTime.getTime() <= 1000 * 60 * 60 * 24) {
                 checkShareDTO = new ShareDTO.CheckShareDTO(false);
             } else {
                 checkShareDTO = new ShareDTO.CheckShareDTO(true);

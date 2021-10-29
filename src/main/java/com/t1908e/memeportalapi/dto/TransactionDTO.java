@@ -26,7 +26,9 @@ public class TransactionDTO {
         this.targetId = transaction.getTargetId();
     }
 
-    @Data
+    @Getter
+    @Setter
+    @NoArgsConstructor
     public static class TransferTokenDTO {
         @NotNull(message = "amount is required")
         private double amount;
@@ -34,6 +36,16 @@ public class TransactionDTO {
         private String reason;
         @NotNull(message = "receiver id is required")
         private long receiverId;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    public static class PushHotDTO {
+        @NotNull(message = "amount is required")
+        private double amount;
+        @NotNull(message = "post id is required")
+        private long postId;
     }
 
     @Getter

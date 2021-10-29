@@ -47,11 +47,24 @@ public class Post {
     @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     private Set<PostShare> postShares;
 
+    @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    private Set<PushHistory> pushHistories;
+
 
     public void addPostLike(PostLike postLike) {
         if (this.postLikes == null) {
             this.postLikes = new HashSet<>();
         }
         this.postLikes.add(postLike);
+    }
+
+    public double subTractToken(double amount) {
+        double tokenBalance = this.getUpHotTokenNeeded();
+        if (amount < 0) {
+            return upHotTokenNeeded;
+        }
+        double newBalance = tokenBalance - amount;
+        this.setUpHotTokenNeeded(newBalance);
+        return newBalance;
     }
 }

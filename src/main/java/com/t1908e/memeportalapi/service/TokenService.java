@@ -3,14 +3,8 @@ package com.t1908e.memeportalapi.service;
 import com.t1908e.memeportalapi.dto.InvoiceDTO;
 import com.t1908e.memeportalapi.dto.NotificationDTO;
 import com.t1908e.memeportalapi.dto.TransactionDTO;
-import com.t1908e.memeportalapi.entity.Invoice;
-import com.t1908e.memeportalapi.entity.Post;
-import com.t1908e.memeportalapi.entity.Transaction;
-import com.t1908e.memeportalapi.entity.User;
-import com.t1908e.memeportalapi.repository.InvoiceRepository;
-import com.t1908e.memeportalapi.repository.PostRepository;
-import com.t1908e.memeportalapi.repository.TransactionRepository;
-import com.t1908e.memeportalapi.repository.UserRepository;
+import com.t1908e.memeportalapi.entity.*;
+import com.t1908e.memeportalapi.repository.*;
 import com.t1908e.memeportalapi.sms.SmsRequest;
 import com.t1908e.memeportalapi.util.FirebaseUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
@@ -27,6 +21,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -40,6 +35,10 @@ public class TokenService {
     private final UserRepository userRepository;
     private final TwilioSmsSender twilioSmsSender;
     private final TransactionRepository transactionRepository;
+    private final PushHistoryRepository pushHistoryRepository;
+    private static final double TAX = 1.01;
+    private static final double DEFAULT_HOT_TOKEN = 1000;
+    private static final double MAX_PUSH_TOKEN_AVAILABLE = DEFAULT_HOT_TOKEN * 20 / 100;
 
     public ResponseEntity<?> getInvoicesByUser(
             String username,
@@ -98,14 +97,17 @@ public class TokenService {
             return ResponseEntity.badRequest().body(restResponse);
         }
         boolean isTargetValid = true;
+        String errorMsg = null;
         switch (transactionDTO.getType()) {
             case TRANSFER:
                 Optional<User> byId = userRepository.findById(transactionDTO.getTargetId());
                 User user = byId.orElse(null);
                 if (user == null || user.getStatus() < 0) {
                     isTargetValid = false;
-                } else if(user.getId() == creator.getId()) {
+                    errorMsg = "receiver not found or has been deleted";
+                } else if (user.getId() == creator.getId()) {
                     isTargetValid = false;
+                    errorMsg = "can not transfer token to yourself";
                 }
                 break;
             case AD_ADS:
@@ -117,6 +119,13 @@ public class TokenService {
                 Post post = postOptional.orElse(null);
                 if (post == null || post.getStatus() < 0) {
                     isTargetValid = false;
+                    errorMsg = "pushed post not found";
+                } else if (post.getStatus() == 2) {
+                    isTargetValid = false;
+                    errorMsg = "can not push a hot post";
+                }else if(post.getUpHotTokenNeeded() < transactionDTO.getAmount()) {
+                    isTargetValid = false;
+                    errorMsg = "push amount exceeds the push available";
                 }
                 break;
             case BUY_DISPLAY_NAME_COLOR:
@@ -126,7 +135,7 @@ public class TokenService {
         }
         if (!isTargetValid) {
             restResponse = new RESTResponse.CustomError()
-                    .setMessage("transaction target not exist or has been deactived")
+                    .setMessage(errorMsg)
                     .setCode(HttpStatus.BAD_REQUEST.value())
                     .build();
             return ResponseEntity.badRequest().body(restResponse);
@@ -236,7 +245,110 @@ public class TokenService {
     }
 
     private ResponseEntity<?> processPushToHot(Transaction transaction) {
-        return null;
+        HashMap<String, Object> restResponse;
+        if (transaction == null || transaction.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("Transaction has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Optional<Post> postOptional = postRepository.findById((int) transaction.getTargetId());
+        Post pushedPost = postOptional.orElse(null);
+        if (pushedPost == null || pushedPost.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("Post has been deleted or not found")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        if (pushedPost.getStatus() == 2) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("Can not push a hot post")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        User pusher = transaction.getUser();
+        if (pusher == null || pusher.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("pusher not found or has been deavtived")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        double pushedAmount = transaction.getAmount();
+        double transactionTokenAmount = pushedAmount * TAX;
+        if (pusher.getTokenBalance() < transactionTokenAmount) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("Not enough token for this transaction")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        List<PushHistory> pushedList = pushHistoryRepository
+                .findAllByUserIdAndPostIdAndStatusGreaterThan(pusher.getId(), pushedPost.getId(), 0);
+        double pushedToken = 0;
+        for (PushHistory push : pushedList) {
+            pushedToken += push.getTokenAmount();
+        }
+        if (pushedToken  > MAX_PUSH_TOKEN_AVAILABLE) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("You has reached push limit for this post")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+
+        try {
+            pusher.subtractToken(transactionTokenAmount);
+            double newPostTokenBalance = pushedPost.subTractToken(pushedAmount);
+            userRepository.save(pusher);
+            postRepository.save(pushedPost);
+            //check to up hot
+            if (newPostTokenBalance <= 0) {
+                pushedPost.setStatus(2);
+                postRepository.save(pushedPost);
+            }
+            //save invoice
+            Invoice pusherInvoice = new Invoice("push post", "use token to push post", transactionTokenAmount, pusher);
+            invoiceRepository.save(pusherInvoice);
+            //save push history
+            PushHistory pushHistory = new PushHistory();
+            pushHistory.setStatus(1); //active
+            pushHistory.setCreatedAt(new Date());
+            pushHistory.setUpdateAt(new Date());
+            pushHistory.setUser(pusher);
+            pushHistory.setPost(pushedPost);
+            pushHistory.setTokenAmount(pushedAmount);
+            pushHistoryRepository.save(pushHistory);
+            //save tx
+            transaction.setStatus(2); //done
+            transaction.setUpdatedAt(new Date());
+            Transaction updatedTx = transactionRepository.save(transaction);
+            //send notification for post creator
+            if (pusher.getId() != pushedPost.getUser().getId()) {
+                NotificationDTO notificationDTO = new NotificationDTO();
+                notificationDTO.setContent(pusher.getFullName().concat(" has pushed ".concat(String.valueOf(pushedAmount)).concat(" token to your post")));
+                notificationDTO.setUrl("/post/".concat(String.valueOf(pushedPost.getId())));
+                notificationDTO.setStatus(1);
+                notificationDTO.setThumbnail(pusher.getAvatar());
+                notificationDTO.setCreatedAt(new Date());
+                FirebaseUtil.sendNotification(pushedPost.getUser().getAccount().getUsername(), notificationDTO);
+            }
+            restResponse = new RESTResponse.Success()
+                    .setMessage("Push success")
+                    .setStatus(HttpStatus.OK.value())
+                    .setData(new TransactionDTO(updatedTx)).build();
+            return ResponseEntity.ok().body(restResponse);
+
+        } catch (Exception exception) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage(exception.getMessage())
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
     }
 
     private ResponseEntity<?> processBuyBadge(Transaction transaction) {
@@ -282,7 +394,7 @@ public class TokenService {
             return ResponseEntity.badRequest().body(restResponse);
         }
         double amount = transaction.getAmount();
-        if (sender.getTokenBalance() < amount * 1.01) {
+        if (sender.getTokenBalance() < amount * TAX) {
             restResponse = new RESTResponse.CustomError()
                     .setMessage("not enough token")
                     .setCode(HttpStatus.BAD_REQUEST.value())
@@ -290,17 +402,18 @@ public class TokenService {
             return ResponseEntity.badRequest().body(restResponse);
         }
         try {
-            sender.subtractToken(amount * 1.01);
+            sender.subtractToken(amount * TAX);
             receiver.addToken(amount);
             userRepository.save(sender);
             userRepository.save(receiver);
             //save invoice
-            Invoice senderInvoice = new Invoice("send token", "transfer token to ".concat(receiver.getFullName()), amount * 1.01, sender);
+            Invoice senderInvoice = new Invoice("send token", "transfer token to ".concat(receiver.getFullName()), amount * TAX, sender);
             Invoice receiverInvoice = new Invoice("receive token", receiver.getFullName().concat(" send token"), amount, receiver);
             invoiceRepository.save(senderInvoice);
             invoiceRepository.save(receiverInvoice);
             //update transaction
             transaction.setStatus(2); //done
+            transaction.setUpdatedAt(new Date());
             Transaction updatedTx = transactionRepository.save(transaction);
             //send notification to receiver
             //send notification
