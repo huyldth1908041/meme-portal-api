@@ -29,6 +29,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
     private final InvoiceRepository invoiceRepository;
+    private final PushHistoryRepository pushHistoryRepository;
 
     public ResponseEntity<?> savePost(PostDTO.CreatePostDTO postDTO, String creatorUsername) {
         HashMap<String, Object> restResponse = new HashMap<>();
@@ -319,7 +320,8 @@ public class PostService {
             postLikeRepository.save(postLike);
             PostDTO.PostLikeDTO postLikeDTO = new PostDTO.PostLikeDTO();
             postLikeDTO.setHasLikedYet(true);
-            postLikeDTO.setLikeCount(post.getPostLikes().size());
+            int likeCount = post.getPostLikes().size();
+            postLikeDTO.setLikeCount(likeCount);
             //send notification and token when only when user like other user's post
             if (liker.getId() != post.getUser().getId()) {
                 //send token: post creator 5 token, liker 1 token
@@ -341,6 +343,33 @@ public class PostService {
                 notificationDTO.setThumbnail(liker.getAvatar());
                 notificationDTO.setCreatedAt(new Date());
                 FirebaseUtil.sendNotification(postCreator.getAccount().getUsername(), notificationDTO);
+            }
+            if(post.getStatus() == 2) {
+                restResponse = new RESTResponse.Success()
+                        .setMessage("Ok")
+                        .setStatus(HttpStatus.CREATED.value())
+                        .setData(postLikeDTO).build();
+                return ResponseEntity.ok().body(restResponse);
+            }
+            //check like count to push to hot or subtract up hot token needed
+            long activeUsersCount = userRepository.countAllByStatusGreaterThan(0);
+            double likeNeededToUpHot = (double) activeUsersCount * 20 / 100;
+            if(likeCount >= likeNeededToUpHot) {
+                //push to hot
+                post.setStatus(2);
+                postRepository.save(post);
+                restResponse = new RESTResponse.Success()
+                        .setMessage("Ok")
+                        .setStatus(HttpStatus.CREATED.value())
+                        .setData(postLikeDTO).build();
+                return ResponseEntity.ok().body(restResponse);
+            }
+            //subtract token
+            double newBalance = post.subTractToken(100);
+            postRepository.save(post);
+            if(newBalance <= 0) {
+                post.setStatus(2);
+                postRepository.save(post);
             }
             restResponse = new RESTResponse.Success()
                     .setMessage("Ok")
@@ -482,5 +511,47 @@ public class PostService {
         return ResponseEntity.ok().body(restResponse);
     }
 
+    public ResponseEntity<?> getPushedList(
+            int postId,
+            Integer page,
+            Integer limit,
+            String sortBy,
+            String order
+    ) {
+        HashMap<String, Object> restResponse;
+        //get list user liked post
+        Optional<Post> byId = postRepository.findById(postId);
+        if (!byId.isPresent() || byId.get().getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("Post not found or has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Post post = byId.get();
+        Sort.Direction direction;
+        if (order == null) {
+            direction = Sort.Direction.DESC;
+        } else if (order.equalsIgnoreCase("asc")) {
+            direction = Sort.Direction.ASC;
+        } else {
+            direction = Sort.Direction.DESC;
+        }
+        Pageable pageInfo = PageRequest.of(page, limit, Sort.by(direction, sortBy));
+        Page<PushHistory> listPushed
+                = pushHistoryRepository.findAllByPostIdAndStatusGreaterThan(post.getId(), 0, pageInfo);
+        //convert to DTO
+        Page<PushHistoryDTO> dtoPage = listPushed.map(new Function<PushHistory, PushHistoryDTO>() {
+            @Override
+            public PushHistoryDTO apply(PushHistory pushHistory) {
+                return new PushHistoryDTO(pushHistory);
+            }
+        });
+        restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData(dtoPage).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
 
 }

@@ -28,6 +28,7 @@ public class PostDTO {
     private int categoryId;
     private int commentCounts;
     private int shareCounts;
+    private int pushCount;
 
 
     public PostDTO(Post post) {
@@ -52,6 +53,10 @@ public class PostDTO {
         this.shareCounts = 0;
         if (post.getPostShares() != null) {
             this.shareCounts = post.getPostShares().size();
+        }
+        this.pushCount = 0;
+        if (post.getPushHistories() != null) {
+            this.pushCount = post.getPushHistories().size();
         }
         this.creator = new UserDTO(post.getUser());
     }
