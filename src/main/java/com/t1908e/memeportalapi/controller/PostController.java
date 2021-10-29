@@ -378,4 +378,20 @@ public class PostController {
         return sharePostService.checkShare(username, id);
     }
 
+
+    @RequestMapping(value = "/{id}/push", method = RequestMethod.GET)
+    public ResponseEntity<?> getPushedList(
+            @PathVariable(name = "id") int id,
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "order", required = false) String order,
+            @RequestParam(name = "sortBy", required = false) String sortBy
+    ) {
+        if (page == null || page <= 0) page = 1;
+        if (limit == null) limit = 30;
+        if (sortBy == null) sortBy = "id";
+
+        return postService.getPushedList(id, page - 1, limit, sortBy, order);
+    }
+
 }

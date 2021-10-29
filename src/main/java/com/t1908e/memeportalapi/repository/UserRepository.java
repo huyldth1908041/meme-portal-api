@@ -25,4 +25,6 @@ public interface UserRepository extends JpaRepository<User, Long> , JpaSpecifica
             "WHERE user.status > 0 AND post.status > 0 " +
             "GROUP BY user.id ORDER BY post_count DESC LIMIT 5")
     List<Object[]> findTopCreator();
+
+    long countAllByStatusGreaterThan(int status);
 }

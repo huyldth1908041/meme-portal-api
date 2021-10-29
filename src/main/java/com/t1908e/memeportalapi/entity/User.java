@@ -61,6 +61,9 @@ public class User {
     @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, mappedBy = "user", fetch = FetchType.LAZY)
     private Set<Transaction> transactions;
 
+    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<PushHistory> pushHistories;
+
     public double addToken(double amount) {
         double tokenBalance = this.getTokenBalance();
         if (amount < 0) {

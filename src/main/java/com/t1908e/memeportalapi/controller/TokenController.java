@@ -78,6 +78,34 @@ public class TokenController {
         return tokenService.createTransaction(transactionDTO, username);
     }
 
+    @RequestMapping(value = "/push", method = RequestMethod.POST)
+    public ResponseEntity<?> pushPost(
+            @Valid @RequestBody TransactionDTO.PushHotDTO pushHotDTO,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
+            BindingResult bindingResult
+    ) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+        if (bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "push failed");
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+
+        TransactionDTO transactionDTO = new TransactionDTO();
+        transactionDTO.setTargetId(pushHotDTO.getPostId());
+        transactionDTO.setAmount(pushHotDTO.getAmount());
+        transactionDTO.setType(TransactionType.PUSH_TO_HOT);
+        return tokenService.createTransaction(transactionDTO, username);
+    }
+
     @RequestMapping(value = "/verify", method = RequestMethod.POST)
     public ResponseEntity<?> processTransaction(
             @Valid @RequestBody TransactionDTO.ProcessTransactionDTO processTransactionDTO,
