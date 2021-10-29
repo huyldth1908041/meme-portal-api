@@ -37,15 +37,9 @@ public class ReportService {
                     .setMessage("Target value must be 1  when report post !").build();
             return ResponseEntity.badRequest().body(restResponse);
         }
-        if (usernameReport.isEmpty() || createReportDTO == null) {
-            restResponse = new RESTResponse.CustomError()
-                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .setMessage("Null pointer exception").build();
-            return ResponseEntity.badRequest().body(restResponse);
-        }
 
         User reporter = authenticationService.getAppUser(usernameReport);
-        if (reporter == null) {
+        if (reporter == null || reporter.getStatus() < 0) {
             restResponse = new RESTResponse.CustomError()
                     .setCode(HttpStatus.BAD_REQUEST.value())
                     .setMessage("User not found").build();

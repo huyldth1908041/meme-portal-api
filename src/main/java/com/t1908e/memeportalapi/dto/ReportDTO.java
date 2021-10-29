@@ -37,8 +37,6 @@ public class ReportDTO {
         @NotNull(message = "targetId is required")
         private int targetId;
         private String content;
-        @NotNull(message = "userId is required")
-        private int userId;
     }
 
 }
