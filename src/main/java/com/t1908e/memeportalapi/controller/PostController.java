@@ -5,10 +5,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 
 import com.t1908e.memeportalapi.dto.CommentDTO;
 import com.t1908e.memeportalapi.dto.PostDTO;
-import com.t1908e.memeportalapi.service.CommentService;
-import com.t1908e.memeportalapi.service.PostService;
-import com.t1908e.memeportalapi.service.SharePostService;
-import com.t1908e.memeportalapi.service.TwilioSmsSender;
+import com.t1908e.memeportalapi.service.*;
 import com.t1908e.memeportalapi.util.JwtUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import com.t1908e.memeportalapi.util.RESTUtil;
@@ -32,6 +29,7 @@ public class PostController {
     private final PostService postService;
     private final CommentService commentService;
     private final SharePostService sharePostService;
+    private final EmailSenderService emailSenderService;
 
     @RequestMapping(value = "", method = RequestMethod.POST)
     public ResponseEntity<?> createPost(
@@ -394,4 +392,16 @@ public class PostController {
         return postService.getPushedList(id, page - 1, limit, sortBy, order);
     }
 
+    @RequestMapping(value = "/send", method = RequestMethod.GET)
+    public String sendMail() {
+        try {
+            emailSenderService
+                    .sendSimpleEmail("...", "send from spring boot again", "hello world");
+            return "Ok";
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            System.out.println(exception.getMessage());
+            return "failed";
+        }
+    }
 }

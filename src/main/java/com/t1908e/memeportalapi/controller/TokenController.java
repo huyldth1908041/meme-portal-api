@@ -15,7 +15,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.HashMap;
+
 
 @RestController
 @RequestMapping("/api/v1/tokens")
@@ -23,6 +23,7 @@ import java.util.HashMap;
 @CrossOrigin
 public class TokenController {
     private final TokenService tokenService;
+
 
     @RequestMapping(value = "/history", method = RequestMethod.GET)
     public ResponseEntity<?> getTokenHistory(
@@ -128,4 +129,5 @@ public class TokenController {
         String username = decodedJWT.getSubject();
         return tokenService.processTransaction(username, processTransactionDTO.getVerifyCode(), processTransactionDTO.getTxId());
     }
+
 }
