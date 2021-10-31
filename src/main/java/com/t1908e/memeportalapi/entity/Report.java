@@ -17,7 +17,7 @@ public class Report {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private int type; //1 user report | 2 post report
-    private int targetId;
+    private long targetId;
     private String content;
     private Date createdAt;
     private Date updatedAt;

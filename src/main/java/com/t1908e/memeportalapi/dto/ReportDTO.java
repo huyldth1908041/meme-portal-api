@@ -12,7 +12,7 @@ import java.util.Date;
 public class ReportDTO {
     private int id;
     private int type; //1 user report | 2 post report
-    private int targetId;
+    private long targetId;
     private String content;
     private Date createdAt;
     private Date updatedAt;
@@ -35,8 +35,9 @@ public class ReportDTO {
         @NotNull(message = "type is required")
         private int type;
         @NotNull(message = "targetId is required")
-        private int targetId;
+        private long targetId;
         private String content;
     }
+
 
 }
