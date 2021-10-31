@@ -5,7 +5,6 @@ import com.t1908e.memeportalapi.dto.NotificationDTO;
 import com.t1908e.memeportalapi.dto.TransactionDTO;
 import com.t1908e.memeportalapi.entity.*;
 import com.t1908e.memeportalapi.repository.*;
-import com.t1908e.memeportalapi.sms.SmsRequest;
 import com.t1908e.memeportalapi.util.FirebaseUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import com.t1908e.memeportalapi.util.RandomUtil;
@@ -33,9 +32,9 @@ public class TokenService {
     private final AuthenticationService authenticationService;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final TwilioSmsSender twilioSmsSender;
     private final TransactionRepository transactionRepository;
     private final PushHistoryRepository pushHistoryRepository;
+    private final EmailSenderService emailSenderService;
     private static final double TAX = 1.01;
     private static final double DEFAULT_HOT_TOKEN = 1000;
     private static final double MAX_PUSH_TOKEN_AVAILABLE = DEFAULT_HOT_TOKEN * 20 / 100;
@@ -123,7 +122,7 @@ public class TokenService {
                 } else if (post.getStatus() == 2) {
                     isTargetValid = false;
                     errorMsg = "can not push a hot post";
-                }else if(post.getUpHotTokenNeeded() < transactionDTO.getAmount()) {
+                } else if (post.getUpHotTokenNeeded() < transactionDTO.getAmount()) {
                     isTargetValid = false;
                     errorMsg = "push amount exceeds the push available";
                 }
@@ -155,13 +154,15 @@ public class TokenService {
             //generate verify code
             String verifyCode = RandomUtil.generateVerifyCode();
             transaction.setVerifyCode(verifyCode);
-            //send sms
-            String message = "your verify code is ".concat(verifyCode);
-            twilioSmsSender.sendSms(new SmsRequest(creator.getPhone(), message));
+            //send emai
+            String message = "your transaction verify code is ".concat(verifyCode);
+            String subject = "Token Transaction Verify code on Hài Code [".concat(verifyCode).concat("]");
+            emailSenderService
+                    .sendSimpleEmail(creator.getAccount().getUsername(), message, subject);
             //save transaction
             Transaction savedTx = transactionRepository.save(transaction);
             restResponse = new RESTResponse.Success()
-                    .setMessage("A verify code has sent to user phone")
+                    .setMessage("A verify code has sent to user email")
                     .setStatus(HttpStatus.OK.value())
                     .setData(new TransactionDTO(savedTx)).build();
             return ResponseEntity.ok().body(restResponse);
@@ -292,7 +293,7 @@ public class TokenService {
         for (PushHistory push : pushedList) {
             pushedToken += push.getTokenAmount();
         }
-        if (pushedToken  > MAX_PUSH_TOKEN_AVAILABLE) {
+        if (pushedToken > MAX_PUSH_TOKEN_AVAILABLE) {
             restResponse = new RESTResponse.CustomError()
                     .setMessage("You has reached push limit for this post")
                     .setCode(HttpStatus.BAD_REQUEST.value())
