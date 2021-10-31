@@ -58,7 +58,7 @@ public class PostService {
         newPost.setTitle(postDTO.getTitle());
         newPost.setDescription(postDTO.getDescription());
         newPost.setImage(postDTO.getImage());
-        newPost.setUpHotTokenNeeded(0);
+        newPost.setUpHotTokenNeeded(1000);
         if (creator.getAccount().getRole().getName().equals("admin")) {
             newPost.setStatus(1); // admin create post no need to verify
         } else {
