@@ -119,12 +119,28 @@ public class TokenService {
                 if (post == null || post.getStatus() < 0) {
                     isTargetValid = false;
                     errorMsg = "pushed post not found";
-                } else if (post.getStatus() == 2) {
+                    break;
+                }
+                if (post.getStatus() == 2) {
                     isTargetValid = false;
                     errorMsg = "can not push a hot post";
-                } else if (post.getUpHotTokenNeeded() < transactionDTO.getAmount()) {
+                    break;
+                }
+                if (post.getUpHotTokenNeeded() < transactionDTO.getAmount()) {
                     isTargetValid = false;
                     errorMsg = "push amount exceeds the push available";
+                    break;
+                }
+                List<PushHistory> pushedList = pushHistoryRepository
+                        .findAllByUserIdAndPostIdAndStatusGreaterThan(creator.getId(), post.getId(), 0);
+                double pushedToken = 0;
+                for (PushHistory push : pushedList) {
+                    pushedToken += push.getTokenAmount();
+                }
+                if (pushedToken + transactionDTO.getAmount() > MAX_PUSH_TOKEN_AVAILABLE) {
+                    isTargetValid = false;
+                    errorMsg = "you've reach push limit";
+                    break;
                 }
                 break;
             case BUY_DISPLAY_NAME_COLOR:
@@ -293,7 +309,7 @@ public class TokenService {
         for (PushHistory push : pushedList) {
             pushedToken += push.getTokenAmount();
         }
-        if (pushedToken > MAX_PUSH_TOKEN_AVAILABLE) {
+        if (pushedToken + pushedAmount > MAX_PUSH_TOKEN_AVAILABLE) {
             restResponse = new RESTResponse.CustomError()
                     .setMessage("You has reached push limit for this post")
                     .setCode(HttpStatus.BAD_REQUEST.value())
