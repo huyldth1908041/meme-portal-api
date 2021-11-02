@@ -48,10 +48,10 @@ public class PostService {
         }
         Category postCategory = categoryOptional.get();
         User creator = authenticationService.getAppUser(creatorUsername);
-        if (creator == null) {
+        if (creator == null || creator.getStatus() < 0) {
             restResponse = new RESTResponse.CustomError()
                     .setCode(HttpStatus.BAD_REQUEST.value())
-                    .setMessage("User not found").build();
+                    .setMessage("User not found or has been deactived").build();
             return ResponseEntity.badRequest().body(restResponse);
         }
         Post newPost = new Post();
@@ -111,10 +111,10 @@ public class PostService {
         }
         Category postCategory = categoryOptional.get();
         User editor = authenticationService.getAppUser(creatorUsername);
-        if (editor == null) {
+        if (editor == null || editor.getStatus() < 0) {
             restResponse = new RESTResponse.CustomError()
                     .setCode(HttpStatus.BAD_REQUEST.value())
-                    .setMessage("User not found").build();
+                    .setMessage("User not found or has been de-activated").build();
             return ResponseEntity.badRequest().body(restResponse);
         }
         if (editor.getAccount().getRole().getName().equals("user")) {
