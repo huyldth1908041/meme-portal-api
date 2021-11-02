@@ -392,16 +392,14 @@ public class PostController {
         return postService.getPushedList(id, page - 1, limit, sortBy, order);
     }
 
-    @RequestMapping(value = "/send", method = RequestMethod.GET)
-    public String sendMail() {
-        try {
-            emailSenderService
-                    .sendSimpleEmail("...", "send from spring boot again", "hello world");
-            return "Ok";
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            System.out.println(exception.getMessage());
-            return "failed";
-        }
+    @RequestMapping(value = "/{id}/makeHot", method = RequestMethod.PUT)
+    public ResponseEntity<?> makeHot(@PathVariable(name = "id") int id) {
+        return postService.makeHotPost(id);
     }
+
+    @RequestMapping(value = "/{id}/makeNew", method = RequestMethod.PUT)
+    public ResponseEntity<?> makeNew(@PathVariable(name = "id") int id) {
+        return postService.makeNew(id);
+    }
+
 }
