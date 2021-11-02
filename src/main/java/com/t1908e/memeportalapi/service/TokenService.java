@@ -36,7 +36,7 @@ public class TokenService {
     private final PushHistoryRepository pushHistoryRepository;
     private final EmailSenderService emailSenderService;
     private static final double TAX = 1.01;
-    private static final double DEFAULT_HOT_TOKEN = 1000;
+    private static final double DEFAULT_HOT_TOKEN = 500;
     private static final double MAX_PUSH_TOKEN_AVAILABLE = DEFAULT_HOT_TOKEN * 20 / 100;
 
     public ResponseEntity<?> getInvoicesByUser(
@@ -129,17 +129,6 @@ public class TokenService {
                 if (post.getUpHotTokenNeeded() < transactionDTO.getAmount()) {
                     isTargetValid = false;
                     errorMsg = "push amount exceeds the push available";
-                    break;
-                }
-                List<PushHistory> pushedList = pushHistoryRepository
-                        .findAllByUserIdAndPostIdAndStatusGreaterThan(creator.getId(), post.getId(), 0);
-                double pushedToken = 0;
-                for (PushHistory push : pushedList) {
-                    pushedToken += push.getTokenAmount();
-                }
-                if (pushedToken + transactionDTO.getAmount() > MAX_PUSH_TOKEN_AVAILABLE) {
-                    isTargetValid = false;
-                    errorMsg = "you've reach push limit";
                     break;
                 }
                 break;
@@ -303,20 +292,6 @@ public class TokenService {
                     .build();
             return ResponseEntity.badRequest().body(restResponse);
         }
-        List<PushHistory> pushedList = pushHistoryRepository
-                .findAllByUserIdAndPostIdAndStatusGreaterThan(pusher.getId(), pushedPost.getId(), 0);
-        double pushedToken = 0;
-        for (PushHistory push : pushedList) {
-            pushedToken += push.getTokenAmount();
-        }
-        if (pushedToken + pushedAmount > MAX_PUSH_TOKEN_AVAILABLE) {
-            restResponse = new RESTResponse.CustomError()
-                    .setMessage("You has reached push limit for this post")
-                    .setCode(HttpStatus.BAD_REQUEST.value())
-                    .build();
-            return ResponseEntity.badRequest().body(restResponse);
-        }
-
         try {
             pusher.subtractToken(transactionTokenAmount);
             double newPostTokenBalance = pushedPost.subTractToken(pushedAmount);

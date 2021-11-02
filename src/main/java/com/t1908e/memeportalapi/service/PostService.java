@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 public class PostService {
+    private static final double DEFAULT_UP_HOT_TOKEN_NEEDED = 500;
     private final PostRepository postRepository;
     private final CategoryRepository categoryRepository;
     private final AuthenticationService authenticationService;
@@ -58,7 +59,7 @@ public class PostService {
         newPost.setTitle(postDTO.getTitle());
         newPost.setDescription(postDTO.getDescription());
         newPost.setImage(postDTO.getImage());
-        newPost.setUpHotTokenNeeded(1000);
+        newPost.setUpHotTokenNeeded(DEFAULT_UP_HOT_TOKEN_NEEDED);
         if (creator.getAccount().getRole().getName().equals("admin")) {
             newPost.setStatus(1); // admin create post no need to verify
         } else {
