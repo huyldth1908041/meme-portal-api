@@ -1,5 +1,6 @@
 package com.t1908e.memeportalapi.entity;
 
+import com.t1908e.memeportalapi.enums.ReportType;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,7 +17,8 @@ public class Report {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    private int type; //1 user report | 2 post report
+    @Enumerated(EnumType.ORDINAL)
+    private ReportType type; //1 user report | 2 post report
     private int targetId;
     private String content;
     private Date createdAt;

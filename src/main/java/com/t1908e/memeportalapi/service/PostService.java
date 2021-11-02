@@ -345,7 +345,7 @@ public class PostService {
                 notificationDTO.setCreatedAt(new Date());
                 FirebaseUtil.sendNotification(postCreator.getAccount().getUsername(), notificationDTO);
             }
-            if(post.getStatus() == 2) {
+            if (post.getStatus() == 2) {
                 restResponse = new RESTResponse.Success()
                         .setMessage("Ok")
                         .setStatus(HttpStatus.CREATED.value())
@@ -355,7 +355,7 @@ public class PostService {
             //check like count to push to hot or subtract up hot token needed
             long activeUsersCount = userRepository.countAllByStatusGreaterThan(0);
             double likeNeededToUpHot = (double) activeUsersCount * 20 / 100;
-            if(likeCount >= likeNeededToUpHot) {
+            if (likeCount >= likeNeededToUpHot) {
                 //push to hot
                 post.setStatus(2);
                 postRepository.save(post);
@@ -368,7 +368,7 @@ public class PostService {
             //subtract token
             double newBalance = post.subTractToken(100);
             postRepository.save(post);
-            if(newBalance <= 0) {
+            if (newBalance <= 0) {
                 post.setStatus(2);
                 postRepository.save(post);
             }
@@ -553,6 +553,63 @@ public class PostService {
                 .setStatus(HttpStatus.OK.value())
                 .setData(dtoPage).build();
         return ResponseEntity.ok().body(restResponse);
+    }
+
+    public ResponseEntity<?> makeHotPost(int postId) {
+        HashMap<String, ?> restResponse;
+        Optional<Post> byId = postRepository.findById(postId);
+        Post post = byId.orElse(null);
+        if (post == null || post.getStatus() < 0 || post.getStatus() == 2) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("Post not found or has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        try {
+            post.setStatus(2);
+            Post save = postRepository.save(post);
+            restResponse = new RESTResponse.Success()
+                    .setMessage("Ok")
+                    .setStatus(HttpStatus.OK.value())
+                    .setData(new PostDTO(save)).build();
+            return ResponseEntity.ok().body(restResponse);
+        } catch (Exception exception) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("save Like failed " + exception.getMessage())
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
+    }
+
+    public ResponseEntity<?> makeNew(int postId) {
+        HashMap<String, ?> restResponse;
+        Optional<Post> byId = postRepository.findById(postId);
+        Post post = byId.orElse(null);
+        if (post == null || post.getStatus() < 0 || post.getStatus() == 1) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("Post not found or has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        try {
+            post.setStatus(1);
+            post.setUpHotTokenNeeded(DEFAULT_UP_HOT_TOKEN_NEEDED);
+            Post save = postRepository.save(post);
+            restResponse = new RESTResponse.Success()
+                    .setMessage("Ok")
+                    .setStatus(HttpStatus.OK.value())
+                    .setData(new PostDTO(save)).build();
+            return ResponseEntity.ok().body(restResponse);
+        } catch (Exception exception) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("update post failed " + exception.getMessage())
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
     }
 
 }
