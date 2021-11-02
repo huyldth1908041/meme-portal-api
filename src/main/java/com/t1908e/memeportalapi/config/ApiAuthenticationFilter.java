@@ -23,6 +23,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 
@@ -54,27 +55,42 @@ public class ApiAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     //so here we will return token for user
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authentication) throws IOException, ServletException {
-        User user = (User) authentication.getPrincipal(); //get user that successfully login
-        //generate tokens
-        String accessToken = JwtUtil.generateToken(user.getUsername(),
-                user.getAuthorities().iterator().next().getAuthority(),
-                request.getRequestURL().toString(),
-                JwtUtil.ONE_DAY * 7);
+        try {
+            User user = (User) authentication.getPrincipal(); //get user that successfully login
+            com.t1908e.memeportalapi.entity.User appUser = authenticationService.getAppUser(user.getUsername());
+            if(appUser == null || appUser.getStatus() < 0) {
+                throw new Exception("user has been de-activated");
+            }
+            //generate tokens
+            String accessToken = JwtUtil.generateToken(user.getUsername(),
+                    user.getAuthorities().iterator().next().getAuthority(),
+                    request.getRequestURL().toString(),
+                    JwtUtil.ONE_DAY * 7);
 
-        String refreshToken = JwtUtil.generateToken(user.getUsername(),
-                null,
-                request.getRequestURL().toString(),
-                JwtUtil.ONE_DAY * 14);
-        com.t1908e.memeportalapi.entity.User appUser = authenticationService.getAppUser(user.getUsername());
-        CredentialDTO credential = new CredentialDTO(accessToken, refreshToken, new UserDTO(appUser));
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setStatus(HttpStatus.OK.value());
-        new ObjectMapper().writeValue(response.getOutputStream(),
-                new RESTResponse
-                        .Success()
-                        .setStatus(HttpStatus.OK.value())
-                        .setMessage("Login success")
-                        .setData(credential)
-                        .build());
+            String refreshToken = JwtUtil.generateToken(user.getUsername(),
+                    null,
+                    request.getRequestURL().toString(),
+                    JwtUtil.ONE_DAY * 14);
+
+            CredentialDTO credential = new CredentialDTO(accessToken, refreshToken, new UserDTO(appUser));
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setStatus(HttpStatus.OK.value());
+            new ObjectMapper().writeValue(response.getOutputStream(),
+                    new RESTResponse
+                            .Success()
+                            .setStatus(HttpStatus.OK.value())
+                            .setMessage("Login success")
+                            .setData(credential)
+                            .build());
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            response.setStatus(HttpStatus.FORBIDDEN.value());
+            HashMap<String, Object> errorBody = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.FORBIDDEN.value())
+                    .setMessage(exception.getMessage())
+                    .build();
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            new ObjectMapper().writeValue(response.getOutputStream(), errorBody);
+        }
     }
 }

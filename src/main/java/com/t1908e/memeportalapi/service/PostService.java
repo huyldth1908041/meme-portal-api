@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 public class PostService {
+    private static final double DEFAULT_UP_HOT_TOKEN_NEEDED = 500;
     private final PostRepository postRepository;
     private final CategoryRepository categoryRepository;
     private final AuthenticationService authenticationService;
@@ -48,17 +49,17 @@ public class PostService {
         }
         Category postCategory = categoryOptional.get();
         User creator = authenticationService.getAppUser(creatorUsername);
-        if (creator == null) {
+        if (creator == null || creator.getStatus() < 0) {
             restResponse = new RESTResponse.CustomError()
                     .setCode(HttpStatus.BAD_REQUEST.value())
-                    .setMessage("User not found").build();
+                    .setMessage("User not found or has been deactived").build();
             return ResponseEntity.badRequest().body(restResponse);
         }
         Post newPost = new Post();
         newPost.setTitle(postDTO.getTitle());
         newPost.setDescription(postDTO.getDescription());
         newPost.setImage(postDTO.getImage());
-        newPost.setUpHotTokenNeeded(1000);
+        newPost.setUpHotTokenNeeded(DEFAULT_UP_HOT_TOKEN_NEEDED);
         if (creator.getAccount().getRole().getName().equals("admin")) {
             newPost.setStatus(1); // admin create post no need to verify
         } else {
@@ -111,10 +112,10 @@ public class PostService {
         }
         Category postCategory = categoryOptional.get();
         User editor = authenticationService.getAppUser(creatorUsername);
-        if (editor == null) {
+        if (editor == null || editor.getStatus() < 0) {
             restResponse = new RESTResponse.CustomError()
                     .setCode(HttpStatus.BAD_REQUEST.value())
-                    .setMessage("User not found").build();
+                    .setMessage("User not found or has been de-activated").build();
             return ResponseEntity.badRequest().body(restResponse);
         }
         if (editor.getAccount().getRole().getName().equals("user")) {
