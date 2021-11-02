@@ -3,10 +3,8 @@ package com.t1908e.memeportalapi.service;
 import com.t1908e.memeportalapi.dto.NotificationDTO;
 import com.t1908e.memeportalapi.dto.PostDTO;
 import com.t1908e.memeportalapi.dto.ReportDTO;
-import com.t1908e.memeportalapi.entity.Category;
-import com.t1908e.memeportalapi.entity.Post;
-import com.t1908e.memeportalapi.entity.Report;
-import com.t1908e.memeportalapi.entity.User;
+import com.t1908e.memeportalapi.entity.*;
+import com.t1908e.memeportalapi.repository.InvoiceRepository;
 import com.t1908e.memeportalapi.repository.PostRepository;
 import com.t1908e.memeportalapi.repository.ReportRepository;
 import com.t1908e.memeportalapi.repository.UserRepository;
@@ -18,9 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 
 
 @Service
@@ -30,6 +26,7 @@ public class ReportService {
     private final AuthenticationService authenticationService;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final InvoiceRepository invoiceRepository;
 
     public ResponseEntity<?> createReportPost(ReportDTO.CreateReportDTO createReportDTO, String usernameReport) {
         HashMap<String, Object> restResponse = new HashMap<>();
@@ -130,7 +127,7 @@ public class ReportService {
                 notification.setThumbnail(existUser.getAvatar());
                 notification.setStatus(1);
                 notification.setCreatedAt(new Date());
-                notification.setUrl("/post/".concat(String.valueOf(savedReport.getId())));
+                notification.setUrl("/user/".concat(String.valueOf(savedReport.getId())));
                 FirebaseUtil.sendNotification("admin@admin.com", notification);
             }
             restResponse = new RESTResponse.Success()
@@ -171,7 +168,24 @@ public class ReportService {
             return ResponseEntity.badRequest().body(restResponse);
         }
         Report  report = optionalReport.get();
-
+        if(report.getType() == 1){ //report post
+            Optional<Post> targetOptional = postRepository.findById( Math.toIntExact(report.getTargetId()));
+            if (!targetOptional.isPresent() || targetOptional.get().getStatus() == 0) { //deactive
+                restResponse = new RESTResponse.CustomError()
+                        .setCode(HttpStatus.NOT_FOUND.value())
+                        .setMessage("ReportTarget not found or had been delete !").build();
+                return ResponseEntity.badRequest().body(restResponse);
+            }
+        }
+        if(report.getType() == 2){ //report user
+            Optional<User> targetOptional = userRepository.findById(report.getTargetId());
+            if (!targetOptional.isPresent() || targetOptional.get().getStatus() == 0) { //deactive
+                restResponse = new RESTResponse.CustomError()
+                        .setCode(HttpStatus.NOT_FOUND.value())
+                        .setMessage("ReportTarget not found or had been delete !").build();
+                return ResponseEntity.badRequest().body(restResponse);
+            }
+        }
         restResponse = new RESTResponse.Success()
                 .setMessage("success")
                 .setStatus(HttpStatus.FOUND.value())
@@ -179,34 +193,112 @@ public class ReportService {
         return ResponseEntity.ok().body(restResponse);
     }
 
-//    public ResponseEntity<?> verifyReport(int reportId, String username) {
-//        HashMap<String, Object> restResponse = new HashMap<>();
-//        User user = authenticationService.getAppUser(username);
-//        if (user == null || user.getStatus() < 0) {
-//            restResponse = new RESTResponse.CustomError()
-//                    .setCode(HttpStatus.BAD_REQUEST.value())
-//                    .setMessage("User not found").build();
-//            return ResponseEntity.badRequest().body(restResponse);
-//        }
-//        if (user.getAccount().getRole().getName() != "admin") {
-//            restResponse = new RESTResponse.CustomError()
-//                    .setCode(HttpStatus.NOT_ACCEPTABLE.value())
-//                    .setMessage("User do not have permission !").build();
-//            return ResponseEntity.badRequest().body(restResponse);
-//        }
-//        Optional<Report> optionalReport = reportRepository.findById(reportId);
-//        if (!optionalReport.isPresent()) {
-//            restResponse = new RESTResponse.CustomError()
-//                    .setCode(HttpStatus.NOT_FOUND.value())
-//                    .setMessage("Report not found").build();
-//            return ResponseEntity.badRequest().body(restResponse);
-//        }
-//        Report  report = optionalReport.get();
-//
-//        restResponse = new RESTResponse.Success()
-//                .setMessage("success")
-//                .setStatus(HttpStatus.FOUND.value())
-//                .setData(new ReportDTO(report)).build();
-//        return ResponseEntity.ok().body(restResponse);
-//    }
+    public ResponseEntity<?> verifyReport(int reportId, String username) {
+        HashMap<String, Object> restResponse = new HashMap<>();
+        User user = authenticationService.getAppUser(username);
+        if (user == null || user.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("User not found").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        if (user.getAccount().getRole().getName() != "admin") {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.NOT_ACCEPTABLE.value())
+                    .setMessage("User do not have permission !").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Optional<Report> optionalReport = reportRepository.findById(reportId);
+        if (!optionalReport.isPresent()) {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.NOT_FOUND.value())
+                    .setMessage("Report not found").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Report  report = optionalReport.get();
+        //xoa post
+        if(report.getType() == 1){//report post
+            Optional<Post> targetOptional = postRepository.findById( Math.toIntExact(report.getTargetId()));
+            if (!targetOptional.isPresent() || targetOptional.get().getStatus() == 0) { //deactive
+                restResponse = new RESTResponse.CustomError()
+                        .setCode(HttpStatus.NOT_FOUND.value())
+                        .setMessage("ReportTarget not found or had been delete !").build();
+                return ResponseEntity.badRequest().body(restResponse);
+            }
+            Post targetPost = targetOptional.get();
+            ArrayList<Integer> targetId = new ArrayList<>();
+            targetId.add(Math.toIntExact(report.getTargetId()));
+            int recordsAffected = postRepository.changePostStatus(targetId, -1);// -1 -> Delete
+            //send notification
+            NotificationDTO notificationDTO = new NotificationDTO();
+            notificationDTO.setUrl("/post/".concat(String.valueOf(report.getTargetId())));
+            notificationDTO.setContent("A post you create ".concat(targetPost.getTitle()).concat(" has been delete because of report!"));
+            notificationDTO.setStatus(1);
+            notificationDTO.setThumbnail(targetPost.getImage());
+            notificationDTO.setCreatedAt(new Date());
+            FirebaseUtil.sendNotification(username, notificationDTO);
+        }
+        // warning user
+        if(report.getType() == 2){//report user
+            Optional<User> targetOptional = userRepository.findById(report.getTargetId());
+            if (!targetOptional.isPresent() || targetOptional.get().getStatus() == 0) { //deactive
+                restResponse = new RESTResponse.CustomError()
+                        .setCode(HttpStatus.NOT_FOUND.value())
+                        .setMessage("ReportTarget not found or had been delete !").build();
+                return ResponseEntity.badRequest().body(restResponse);
+            }
+            User targetUser = targetOptional.get();
+            //send notification
+            NotificationDTO notificationDTO = new NotificationDTO();
+//            notificationDTO.setUrl("/post/".concat(String.valueOf(report.getTargetId())));
+            notificationDTO.setContent("Warning !You had been report by other user base on you behaviour !");
+            notificationDTO.setStatus(1);
+//            notificationDTO.setThumbnail(targetPost.getImage());
+            notificationDTO.setCreatedAt(new Date());
+            FirebaseUtil.sendNotification(username, notificationDTO);
+        }
+        //gui token cho tat ca user report cung post hoac user nayf
+        List<Report> listReport = reportRepository.findAllByTargetId(report.getTargetId());
+        for (Report rp: listReport) {
+            if (rp == null || rp.getStatus() == 1) {
+                continue;
+            }
+            try{
+                rp.setStatus(1);//done
+                User userGetToken = rp.getUser();
+                String userGetTokenUsername = userGetToken.getAccount().getUsername();
+                //send token
+                double newTokenBalance = user.addToken(20);
+                userRepository.save(user);
+                Invoice invoice = new Invoice();
+                invoice.setAmount(20);
+                invoice.setContent("Report verified");
+                invoice.setName("Token received");
+                invoice.setCreatedAt(new Date());
+                invoice.setUpdatedAt(new Date());
+                invoice.setStatus(1);
+                invoice.setUser(user);
+                invoiceRepository.save(invoice);
+                //send notification
+                NotificationDTO notificationDTO = new NotificationDTO();
+//                notificationDTO.setUrl("/post/".concat(String.valueOf(post.getId())));
+                notificationDTO.setContent("Your report ".concat("")
+                        .concat(" has been verified! and you gained 20 tokens"));
+                notificationDTO.setStatus(1);
+//                notificationDTO.setThumbnail();
+                notificationDTO.setCreatedAt(new Date());
+                FirebaseUtil.sendNotification(userGetTokenUsername, notificationDTO);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                continue;
+            }
+        }
+
+        restResponse = new RESTResponse.Success()
+                .setMessage("success")
+                .setStatus(HttpStatus.FOUND.value())
+                .setData(new ReportDTO(report)).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
 }
