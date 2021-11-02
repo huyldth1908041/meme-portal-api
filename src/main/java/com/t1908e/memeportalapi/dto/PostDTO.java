@@ -4,6 +4,7 @@ import com.t1908e.memeportalapi.entity.Post;
 import lombok.*;
 import org.springframework.data.domain.Page;
 
+import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -65,6 +66,7 @@ public class PostDTO {
     @Data
     public static class CreatePostDTO {
         @NotBlank(message = "Title is required")
+        @Max(value = 70, message = "title max 70 character")
         private String title;
         private String description;
         @NotBlank(message = "Image is required")
