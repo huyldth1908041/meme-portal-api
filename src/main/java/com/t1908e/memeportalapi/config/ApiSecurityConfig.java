@@ -46,7 +46,8 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
                         "/api/v1/categories**", "/api/v1/categories/*")
                 .permitAll();
         http.authorizeRequests()
-                .antMatchers(HttpMethod.GET, "/api/v1/posts/**", "/api/v1/users/**", "/api/v1/posts**")
+                .antMatchers(HttpMethod.GET, "/api/v1/posts/**", "/api/v1/users/**", "/api/v1/posts**",
+                        "/api/v1/advertisements/active**")
                 .permitAll();
         http.authorizeRequests().antMatchers("/api/v1/posts/verify",
                 "/api/v1/posts/verify/*").hasAnyAuthority("admin");
@@ -61,12 +62,13 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
                 .hasAnyAuthority("admin");
         http.authorizeRequests()
                 .antMatchers(HttpMethod.POST,
-                        "/api/v1/posts/**", "/api/v1/posts*",
-                        "/api/v1/tokens/**", "/api/v1/tokens*",
-                        "/api/v1/reports/**", "/api/v1/reports*")
+                        "/api/v1/posts/**", "/api/v1/posts*")
                 .hasAnyAuthority("user", "admin");
         //add requests path for more role here
-
+        http.authorizeRequests().antMatchers("/api/v1/tokens/**", "/api/v1/tokens*",
+                "/api/v1/reports/**", "/api/v1/reports*",
+                "/api/v1/advertisements/**", "/api/v1/advertisements*")
+                .hasAnyAuthority("user", "admin");
         http.authorizeRequests().anyRequest().authenticated();
         http.addFilter(apiAuthenticationFilter);
         http.addFilterBefore(new CorsFilter(), ChannelProcessingFilter.class);

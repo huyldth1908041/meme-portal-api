@@ -6,6 +6,7 @@ import com.t1908e.memeportalapi.dto.TransactionDTO;
 import com.t1908e.memeportalapi.entity.*;
 import com.t1908e.memeportalapi.repository.*;
 import com.t1908e.memeportalapi.util.FirebaseUtil;
+import com.t1908e.memeportalapi.util.JwtUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import com.t1908e.memeportalapi.util.RandomUtil;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import java.util.function.Function;
 @Transactional
 @RequiredArgsConstructor
 public class TokenService {
+    private static final double ADVERTISEMENT_PRICE = 1000;
     private final InvoiceRepository invoiceRepository;
     private final AuthenticationService authenticationService;
     private final PostRepository postRepository;
@@ -35,6 +37,7 @@ public class TokenService {
     private final TransactionRepository transactionRepository;
     private final PushHistoryRepository pushHistoryRepository;
     private final EmailSenderService emailSenderService;
+    private final AdvertisementRepository advertisementRepository;
     private static final double TAX = 1.01;
     private static final double DEFAULT_HOT_TOKEN = 500;
     private static final double MAX_PUSH_TOKEN_AVAILABLE = DEFAULT_HOT_TOKEN * 20 / 100;
@@ -348,7 +351,85 @@ public class TokenService {
     }
 
     private ResponseEntity<?> processAddAds(Transaction transaction) {
-        return null;
+        //update ads status -> 1, subtract user balance, save invoice, send notifications
+        HashMap<String, Object> restResponse;
+        if (transaction == null || transaction.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("Transaction has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        User creator = transaction.getUser();
+        if (creator == null || creator.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("sender not found or has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        if (creator.getTokenBalance() < ADVERTISEMENT_PRICE * TAX) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("Not enough token for this transaction")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Optional<Advertisement> byId = advertisementRepository.findById((int) transaction.getTargetId());
+        Advertisement advertisement = byId.orElse(null);
+        if(advertisement == null || advertisement.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("Advertisement not found or has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        List<Advertisement> createdAds = advertisementRepository.findAllByUserIdAndStatusOrderByCreatedAtDesc(creator.getId(), 2);
+        if(!createdAds.isEmpty()) {
+            Advertisement lastCreatedAds = createdAds.get(0);
+            Date updatedAt = lastCreatedAds.getUpdatedAt();
+            if(new Date().getTime() - updatedAt.getTime() < JwtUtil.ONE_DAY * 30L) {
+                restResponse = new RESTResponse.CustomError()
+                        .setMessage("you've reached advertisement limit for this month")
+                        .setCode(HttpStatus.BAD_REQUEST.value())
+                        .build();
+                return ResponseEntity.badRequest().body(restResponse);
+            }
+        }
+        try {
+            advertisement.setStatus(1); // đã thanh toán đang pending
+            advertisement.setUpdatedAt(new Date());
+            advertisementRepository.save(advertisement);
+            //subtract user balance
+            creator.subtractToken(ADVERTISEMENT_PRICE * TAX);
+            userRepository.save(creator);
+            //update tx
+            transaction.setStatus(2); //done
+            Transaction updateTx = transactionRepository.save(transaction);
+            //save invoice
+            Invoice creatorInvoice = new Invoice("Create Advertisement", "use token to create advertisement", ADVERTISEMENT_PRICE * TAX, creator);
+            invoiceRepository.save(creatorInvoice);
+            //send notification for admin
+            NotificationDTO notificationDTO = new NotificationDTO();
+            notificationDTO.setContent("you have new advertisement to verify");
+            notificationDTO.setUrl("/ads/".concat(String.valueOf(advertisement.getId())));
+            notificationDTO.setStatus(1);
+            notificationDTO.setThumbnail(advertisement.getImage());
+            notificationDTO.setCreatedAt(new Date());
+            FirebaseUtil.sendNotification("admin@admin.com", notificationDTO);
+
+            restResponse = new RESTResponse.Success()
+                    .setMessage("Ads success")
+                    .setStatus(HttpStatus.OK.value())
+                    .setData(new TransactionDTO(updateTx)).build();
+            return ResponseEntity.ok().body(restResponse);
+        } catch (Exception exception) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage(exception.getMessage())
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
     }
 
     private ResponseEntity<?> processTransferToken(Transaction transaction) {
