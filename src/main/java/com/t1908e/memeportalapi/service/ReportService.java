@@ -87,6 +87,14 @@ public class ReportService {
             report.setUpdatedAt(new Date());
             report.setType(createReportDTO.getType());
             Report savedReport = reportRepository.save(report);
+            //send notification to admin
+            //send notification for admin
+            NotificationDTO notificationDTO = new NotificationDTO();
+            notificationDTO.setContent("you have new report to resolve");
+            notificationDTO.setUrl("/report/".concat(String.valueOf(report.getId())));
+            notificationDTO.setStatus(1);
+            notificationDTO.setCreatedAt(new Date());
+            FirebaseUtil.sendNotification("admin@admin.com", notificationDTO);
             restResponse = new RESTResponse.Success()
                     .setMessage("success")
                     .setStatus(HttpStatus.CREATED.value())
