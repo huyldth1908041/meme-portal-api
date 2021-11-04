@@ -1,16 +1,16 @@
 package com.t1908e.memeportalapi.service;
 
+import com.t1908e.memeportalapi.dto.NotificationDTO;
 import com.t1908e.memeportalapi.dto.PostDTO;
 import com.t1908e.memeportalapi.dto.ReportDTO;
 import com.t1908e.memeportalapi.dto.UserDTO;
-import com.t1908e.memeportalapi.entity.Post;
-import com.t1908e.memeportalapi.entity.PostLike;
-import com.t1908e.memeportalapi.entity.Report;
-import com.t1908e.memeportalapi.entity.User;
+import com.t1908e.memeportalapi.entity.*;
 import com.t1908e.memeportalapi.enums.ReportType;
+import com.t1908e.memeportalapi.repository.InvoiceRepository;
 import com.t1908e.memeportalapi.repository.PostRepository;
 import com.t1908e.memeportalapi.repository.ReportRepository;
 import com.t1908e.memeportalapi.repository.UserRepository;
+import com.t1908e.memeportalapi.util.FirebaseUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -32,6 +32,7 @@ public class ReportService {
     private final ReportRepository reportRepository;
     private final AuthenticationService authenticationService;
     private final UserRepository userRepository;
+    private final InvoiceRepository invoiceRepository;
 
     public ResponseEntity<?> createReport(ReportDTO.CreateReportDTO createReportDTO, String username) {
         HashMap<String, Object> restResponse;
@@ -59,7 +60,7 @@ public class ReportService {
                 long userId = createReportDTO.getTargetId();
                 Optional<User> userById = userRepository.findById(userId);
                 User reportedUser = userById.orElse(null);
-                if(reportedUser == null || reportedUser.getStatus() < 0 || reportedUser.getAccount().getRole().getName().equals("admin")) {
+                if (reportedUser == null || reportedUser.getStatus() < 0 || reportedUser.getAccount().getRole().getName().equals("admin")) {
                     isTargetIdValid = false;
                     message = "reported user is not valid";
                 }
@@ -69,7 +70,7 @@ public class ReportService {
                 message = "invalid report type";
                 break;
         }
-        if(!isTargetIdValid) {
+        if (!isTargetIdValid) {
             restResponse = new RESTResponse.CustomError()
                     .setMessage(message)
                     .setCode(HttpStatus.BAD_REQUEST.value())
@@ -80,7 +81,7 @@ public class ReportService {
             Report report = new Report();
             report.setContent(createReportDTO.getContent());
             report.setTargetId(createReportDTO.getTargetId());
-            report.setStatus(1); //active
+            report.setStatus(0); //pending
             report.setUser(reporter);
             report.setCreatedAt(new Date());
             report.setUpdatedAt(new Date());
@@ -136,7 +137,7 @@ public class ReportService {
         HashMap<String, Object> restResponse;
         Optional<Report> byId = reportRepository.findById(id);
         Report report = byId.orElse(null);
-        if(report == null) {
+        if (report == null) {
             restResponse = new RESTResponse.CustomError()
                     .setMessage("report not found")
                     .setCode(HttpStatus.BAD_REQUEST.value())
@@ -154,7 +155,7 @@ public class ReportService {
         HashMap<String, Object> restResponse;
         Optional<Report> byId = reportRepository.findById(id);
         Report report = byId.orElse(null);
-        if(report == null || report.getStatus() < 0) {
+        if (report == null || report.getStatus() < 0) {
             restResponse = new RESTResponse.CustomError()
                     .setMessage("report not found or has been deleted")
                     .setCode(HttpStatus.BAD_REQUEST.value())
@@ -168,12 +169,60 @@ public class ReportService {
                     .setMessage("Ok")
                     .setStatus(HttpStatus.OK.value()).build();
             return ResponseEntity.ok().body(restResponse);
-        }catch (Exception exception) {
+        } catch (Exception exception) {
             restResponse = new RESTResponse.CustomError()
                     .setMessage("save report failed " + exception.getMessage())
                     .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
                     .build();
             return ResponseEntity.internalServerError().body(restResponse);
         }
+    }
+
+    public ResponseEntity<?> resolveReport(ArrayList<Integer> listIds) {
+        List<Report> allById = reportRepository.findAllById(listIds);
+        ArrayList<Report> listUpdated = new ArrayList<>();
+        for (Report report : allById) {
+            if (report == null || report.getStatus() < 0 || report.getStatus() == 1) {
+                continue;
+            }
+            try {
+                //update report status then transfer token and notification
+                report.setStatus(1);
+                listUpdated.add(report);
+                User user = report.getUser();
+                String username = user.getAccount().getUsername();
+                //send token
+                double newTokenBalance = user.addToken(10);
+                userRepository.save(user);
+                Invoice invoice = new Invoice();
+                invoice.setAmount(10);
+                invoice.setContent("Report resolved");
+                invoice.setName("Token received");
+                invoice.setCreatedAt(new Date());
+                invoice.setUpdatedAt(new Date());
+                invoice.setStatus(1);
+                invoice.setUser(user);
+                invoiceRepository.save(invoice);
+                //send notification
+                NotificationDTO notificationDTO = new NotificationDTO();
+                notificationDTO.setUrl("/token/history/");
+                notificationDTO.setContent("Your post report is verified an you gain 10 tokens");
+                notificationDTO.setStatus(1);
+                notificationDTO.setThumbnail(user.getAvatar());
+                notificationDTO.setCreatedAt(new Date());
+                FirebaseUtil.sendNotification(username, notificationDTO);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+                continue;
+            }
+        }
+        List<Report> reportsUpdated = reportRepository.saveAll(listUpdated);
+        HashMap<String, ?> restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData(String.valueOf(reportsUpdated.size()).concat(" rows updated"))
+                .build();
+        return ResponseEntity.ok().body(restResponse);
+
     }
 }

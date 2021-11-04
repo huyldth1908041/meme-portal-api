@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.Date;
 
 @Getter
@@ -50,5 +51,10 @@ public class ReportDTO {
         private int postId;
         @NotBlank(message = "content is required")
         private String content;
+    }
+
+    @Data
+    public static class ResolveReportDTP {
+        private ArrayList<Integer> listIds;
     }
 }

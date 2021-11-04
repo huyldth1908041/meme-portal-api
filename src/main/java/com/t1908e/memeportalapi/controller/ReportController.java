@@ -87,4 +87,11 @@ public class ReportController {
         return reportService.deleteReport(id);
     }
 
+    @RequestMapping("/resolve")
+    public ResponseEntity<?> resolveReport(@RequestBody @Valid ReportDTO.ResolveReportDTP dto, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "Save report failed");
+        }
+        return reportService.resolveReport(dto.getListIds());
+    }
 }
