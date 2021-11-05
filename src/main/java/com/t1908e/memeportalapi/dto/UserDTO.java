@@ -61,4 +61,9 @@ public class UserDTO {
         @NotNull(message = "gender is required")
         private int gender;
     }
+    @Data
+    public static class UserStatsDTO {
+        private int userCount;
+        private Date createdAt;
+    }
 }

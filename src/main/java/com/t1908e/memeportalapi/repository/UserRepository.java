@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,4 +28,6 @@ public interface UserRepository extends JpaRepository<User, Long> , JpaSpecifica
     List<Object[]> findTopCreator();
 
     long countAllByStatusGreaterThan(int status);
+    @Query(nativeQuery = true, value = "SELECT user.created_at, COUNT(*) AS user_count FROM `user` WHERE status > 0 AND created_at >= NOW() - INTERVAL :days DAY and created_at <= NOW() GROUP BY DATE(created_at) ORDER BY created_at ASC")
+    List<Object[]> getUserCountByCreateTime(@Param(value="days") int days);
 }
