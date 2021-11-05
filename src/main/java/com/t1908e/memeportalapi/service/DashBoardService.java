@@ -3,6 +3,7 @@ package com.t1908e.memeportalapi.service;
 import com.t1908e.memeportalapi.dto.DashBoardReportDTO;
 import com.t1908e.memeportalapi.dto.PostDTO;
 import com.t1908e.memeportalapi.dto.TransactionDTO;
+import com.t1908e.memeportalapi.dto.UserDTO;
 import com.t1908e.memeportalapi.repository.PostRepository;
 import com.t1908e.memeportalapi.repository.TransactionRepository;
 import com.t1908e.memeportalapi.repository.UserRepository;
@@ -56,6 +57,23 @@ public class DashBoardService {
             Date date = (Date) row[0];
             BigInteger postCountBigInteger = (BigInteger) row[1];
             dto.setPostCount(postCountBigInteger.intValue());
+            dto.setCreatedAt(date);
+            statisticDTOList.add(dto);
+        }
+        HashMap<String, Object> restResponse = new RESTResponse.Success()
+                .setMessage("Ok")
+                .setStatus(HttpStatus.OK.value())
+                .setData(statisticDTOList).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
+    public ResponseEntity getUserCountByCreatedAt(int days) {
+        List<Object[]> results = userRepository.getUserCountByCreateTime(days);
+        List<UserDTO.UserStatsDTO> statisticDTOList = new ArrayList<>();
+        for (Object[] row : results) {
+            UserDTO.UserStatsDTO dto = new UserDTO.UserStatsDTO();
+            Date date = (Date) row[0];
+            BigInteger userCount = (BigInteger) row[1];
+            dto.setUserCount(userCount.intValue());
             dto.setCreatedAt(date);
             statisticDTOList.add(dto);
         }

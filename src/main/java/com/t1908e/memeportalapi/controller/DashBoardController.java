@@ -24,4 +24,12 @@ public class DashBoardController {
         if (days == null) days = 7;
         return dashBoardService.getPostCountByCreatedAt(days);
     }
+
+    @RequestMapping(value = "/userCount", method = RequestMethod.GET)
+    public ResponseEntity<?> getUserCountByCreateTime(
+            @RequestParam(name = "days", required = false) Integer days
+    ) {
+        if (days == null) days = 7;
+        return dashBoardService.getUserCountByCreatedAt(days);
+    }
 }
