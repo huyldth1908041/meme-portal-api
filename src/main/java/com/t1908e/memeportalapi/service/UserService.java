@@ -1,10 +1,9 @@
 package com.t1908e.memeportalapi.service;
 
+import com.t1908e.memeportalapi.dto.PostDTO;
 import com.t1908e.memeportalapi.dto.TopTokenDTO;
 import com.t1908e.memeportalapi.dto.UserDTO;
-import com.t1908e.memeportalapi.entity.Account;
-import com.t1908e.memeportalapi.entity.Role;
-import com.t1908e.memeportalapi.entity.User;
+import com.t1908e.memeportalapi.entity.*;
 import com.t1908e.memeportalapi.repository.AccountRepository;
 import com.t1908e.memeportalapi.repository.PostRepository;
 import com.t1908e.memeportalapi.repository.RoleRepository;
@@ -236,5 +235,45 @@ public class UserService {
                 .setMessage("Ok")
                 .setStatus(HttpStatus.OK.value())
                 .setData(topTokenDTOList).build());
+    }
+
+    public ResponseEntity<?> getPostCreated(String username) {
+        HashMap<String, Object> restResponse = new HashMap<>();
+        User user = authenticationService.getAppUser(username);
+        if (user == null || user.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("User not found or has been de-activated").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Set<Post> posts = user.getPosts();
+        if (posts == null) {
+            posts = new HashSet<>();
+        }
+        restResponse = new RESTResponse.Success()
+                .setMessage("OK")
+                .setStatus(HttpStatus.OK.value())
+                .setData(posts.size()).build();
+        return ResponseEntity.ok().body(restResponse);
+    }
+
+    public ResponseEntity<?> getTotalComment(String username) {
+        HashMap<String, Object> restResponse = new HashMap<>();
+        User user = authenticationService.getAppUser(username);
+        if (user == null || user.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("User not found or has been de-activated").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        Set<Comment> comments = user.getComments();
+        if (comments == null) {
+            comments = new HashSet<>();
+        }
+        restResponse = new RESTResponse.Success()
+                .setMessage("OK")
+                .setStatus(HttpStatus.OK.value())
+                .setData(comments.size()).build();
+        return ResponseEntity.ok().body(restResponse);
     }
 }

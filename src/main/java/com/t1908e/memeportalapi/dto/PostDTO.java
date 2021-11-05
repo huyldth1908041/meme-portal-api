@@ -98,5 +98,10 @@ public class PostDTO {
         private Page<UserDTO> likedList;
     }
 
+    @Data
+    public static class PostStatisticDTO {
+        private Date createdAt;
+        private int postCount;
+    }
 
 }
