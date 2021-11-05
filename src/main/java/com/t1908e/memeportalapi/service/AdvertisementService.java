@@ -84,7 +84,7 @@ public class AdvertisementService {
             advertisement.setUrl(dto.getUrl());
             advertisement.setCreatedAt(new Date());
             advertisement.setUpdatedAt(new Date());
-            advertisement.setStatus(0);
+            advertisement.setStatus(0); //not purchase for ads  yet
             advertisement.setUser(creator);
             Advertisement saved = advertisementRepository.save(advertisement);
             //create an tx

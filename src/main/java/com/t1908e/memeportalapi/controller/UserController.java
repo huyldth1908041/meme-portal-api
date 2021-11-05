@@ -90,4 +90,36 @@ public class UserController {
     public ResponseEntity<?> getTopTokenOwner() {
         return userService.getTopTokenOwner();
     }
+
+    @RequestMapping(value = "/postCreated", method = RequestMethod.GET)
+    public ResponseEntity<?> getPostCreated(@RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+        return userService.getPostCreated(username);
+    }
+
+    @RequestMapping(value = "/commentCount", method = RequestMethod.GET)
+    public ResponseEntity<?> getTotalComment(@RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+        return userService.getTotalComment(username);
+    }
 }
