@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PostService {
     private static final double DEFAULT_UP_HOT_TOKEN_NEEDED = 500;
+    private static final double TOKEN_WHEN_LIKED = 50;
     private final PostRepository postRepository;
     private final CategoryRepository categoryRepository;
     private final AuthenticationService authenticationService;
@@ -366,7 +367,7 @@ public class PostService {
                 return ResponseEntity.ok().body(restResponse);
             }
             //subtract token
-            double newBalance = post.subTractToken(100);
+            double newBalance = post.subTractToken(TOKEN_WHEN_LIKED);
             postRepository.save(post);
             if (newBalance <= 0) {
                 post.setStatus(2);

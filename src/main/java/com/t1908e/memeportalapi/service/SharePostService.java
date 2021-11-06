@@ -27,6 +27,7 @@ import java.util.Optional;
 @Transactional
 @RequiredArgsConstructor
 public class SharePostService {
+    private static final double TOKEN_WHEN_SHARED = 50;
     private final PostShareRepository postShareRepository;
     private final AuthenticationService authenticationService;
     private final PostRepository postRepository;
@@ -71,8 +72,7 @@ public class SharePostService {
             postShare.setUser(sharer);
             postShare.setPost(sharedPost);
             postShareRepository.save(postShare);
-            //send notification and token
-
+            postRepository.save(sharedPost);
             if (sharer.getId() != sharedPost.getUser().getId()) {
                 //send token: sharer: 3 token, post creator 3 token
                 User postCreator = sharedPost.getUser();
@@ -98,7 +98,7 @@ public class SharePostService {
             shareDTO.setShareCount(sharedPost.getPostShares().size());
             if (sharedPost.getStatus() != 2) {
                 //subtract token
-                double newBalance = sharedPost.subTractToken(100);
+                double newBalance = sharedPost.subTractToken(TOKEN_WHEN_SHARED);
                 postRepository.save(sharedPost);
                 if (newBalance <= 0) {
                     sharedPost.setStatus(2);
