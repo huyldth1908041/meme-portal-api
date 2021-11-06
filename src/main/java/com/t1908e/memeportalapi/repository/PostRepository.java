@@ -34,5 +34,7 @@ public interface PostRepository extends JpaRepository<Post, Integer>, JpaSpecifi
     @Query(nativeQuery = true, value = "SELECT post.created_at, COUNT(*) AS post_count FROM `post` WHERE status > 0 AND created_at >= NOW() - INTERVAL :days DAY and created_at <= NOW() GROUP BY DATE(created_at) ORDER BY created_at ASC")
     List<Object[]> countPostByCreatedDate(@Param(value="days") int days);
 
+    int countByUserIdAndStatusGreaterThan(long userId, int status);
+
 }
 

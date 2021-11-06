@@ -4,10 +4,7 @@ import com.t1908e.memeportalapi.dto.PostDTO;
 import com.t1908e.memeportalapi.dto.TopTokenDTO;
 import com.t1908e.memeportalapi.dto.UserDTO;
 import com.t1908e.memeportalapi.entity.*;
-import com.t1908e.memeportalapi.repository.AccountRepository;
-import com.t1908e.memeportalapi.repository.PostRepository;
-import com.t1908e.memeportalapi.repository.RoleRepository;
-import com.t1908e.memeportalapi.repository.UserRepository;
+import com.t1908e.memeportalapi.repository.*;
 import com.t1908e.memeportalapi.specification.UserSpecificationBuilder;
 import com.t1908e.memeportalapi.util.ConvertUtil;
 import com.t1908e.memeportalapi.util.RESTResponse;
@@ -30,11 +27,11 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 public class UserService {
-    private final AccountRepository accountRepository;
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
     private final PostRepository postRepository;
     private final RoleRepository roleRepository;
+    private final CommentRepository commentRepository;
 
     public ResponseEntity<?> getUserDetail(long userId) {
         HashMap<String, Object> restResponse = new HashMap<>();
@@ -237,43 +234,37 @@ public class UserService {
                 .setData(topTokenDTOList).build());
     }
 
-    public ResponseEntity<?> getPostCreated(String username) {
+    public ResponseEntity<?> getPostCreated(long userid) {
         HashMap<String, Object> restResponse = new HashMap<>();
-        User user = authenticationService.getAppUser(username);
+        User user = userRepository.findById(userid).orElse(null);
         if (user == null || user.getStatus() < 0) {
             restResponse = new RESTResponse.CustomError()
                     .setCode(HttpStatus.BAD_REQUEST.value())
                     .setMessage("User not found or has been de-activated").build();
             return ResponseEntity.badRequest().body(restResponse);
         }
-        Set<Post> posts = user.getPosts();
-        if (posts == null) {
-            posts = new HashSet<>();
-        }
+        int count = postRepository.countByUserIdAndStatusGreaterThan(user.getId(), 0);
         restResponse = new RESTResponse.Success()
                 .setMessage("OK")
                 .setStatus(HttpStatus.OK.value())
-                .setData(posts.size()).build();
+                .setData(count).build();
         return ResponseEntity.ok().body(restResponse);
     }
 
-    public ResponseEntity<?> getTotalComment(String username) {
+    public ResponseEntity<?> getTotalComment(long userId) {
         HashMap<String, Object> restResponse = new HashMap<>();
-        User user = authenticationService.getAppUser(username);
+        User user = userRepository.findById(userId).orElse(null);
         if (user == null || user.getStatus() < 0) {
             restResponse = new RESTResponse.CustomError()
                     .setCode(HttpStatus.BAD_REQUEST.value())
                     .setMessage("User not found or has been de-activated").build();
             return ResponseEntity.badRequest().body(restResponse);
         }
-        Set<Comment> comments = user.getComments();
-        if (comments == null) {
-            comments = new HashSet<>();
-        }
+        int count = commentRepository.countByUserIdAndStatusGreaterThan(userId, 0);
         restResponse = new RESTResponse.Success()
                 .setMessage("OK")
                 .setStatus(HttpStatus.OK.value())
-                .setData(comments.size()).build();
+                .setData(count).build();
         return ResponseEntity.ok().body(restResponse);
     }
 }
