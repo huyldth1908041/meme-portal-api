@@ -18,4 +18,6 @@ public interface CommentRepository extends JpaRepository<Comment, Integer> {
     Page<Comment> findAllByRepliedCommentId(int commentId, Pageable pageable);
 
     int countByUserIdAndStatusGreaterThan(long userId, int status);
+
+    int countByPostIdAndStatusGreaterThan(int postId, int status);
 }

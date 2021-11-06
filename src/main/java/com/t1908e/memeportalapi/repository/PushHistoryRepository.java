@@ -12,4 +12,6 @@ public interface PushHistoryRepository extends JpaRepository<PushHistory, Intege
 
     Page<PushHistory> findAllByPostIdAndStatusGreaterThan(int postId, int status, Pageable pageable);
 
+    int countByPostIdAndStatusGreaterThan(int postId, int status);
+
 }

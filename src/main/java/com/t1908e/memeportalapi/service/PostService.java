@@ -32,6 +32,8 @@ public class PostService {
     private final PostLikeRepository postLikeRepository;
     private final InvoiceRepository invoiceRepository;
     private final PushHistoryRepository pushHistoryRepository;
+    private final CommentRepository commentRepository;
+    private final PostShareRepository postShareRepository;
 
     public ResponseEntity<?> savePost(PostDTO.CreatePostDTO postDTO, String creatorUsername) {
         HashMap<String, Object> restResponse = new HashMap<>();
@@ -84,7 +86,7 @@ public class PostService {
             restResponse = new RESTResponse.Success()
                     .setMessage("success")
                     .setStatus(HttpStatus.CREATED.value())
-                    .setData(new PostDTO(savedPost)).build();
+                    .setData(new PostDTO(savedPost)).build(); //khong can tra ve count....
             return ResponseEntity.ok().body(restResponse);
 
         } catch (Exception exception) {
@@ -143,7 +145,7 @@ public class PostService {
             restResponse = new RESTResponse.Success()
                     .setMessage("success")
                     .setStatus(HttpStatus.CREATED.value())
-                    .setData(new PostDTO(savedPost)).build();
+                    .setData(new PostDTO(savedPost)).build(); //không cần trả về count
             return ResponseEntity.ok().body(restResponse);
 
         } catch (Exception exception) {
@@ -183,7 +185,14 @@ public class PostService {
         Page<PostDTO> dtoPage = all.map(new Function<Post, PostDTO>() {
             @Override
             public PostDTO apply(Post post) {
-                return new PostDTO(post);
+                int id = post.getId();
+                PostDTO postDTO = new PostDTO(post);//cần trả về count
+                postDTO.setLikeCounts(postLikeRepository.countByPostId(id));
+                postDTO.setCommentCounts(commentRepository.countByPostIdAndStatusGreaterThan(id, 0));
+                postDTO.setShareCounts(postShareRepository.countByPostId(id));
+                postDTO.setPushCount(pushHistoryRepository.countByPostIdAndStatusGreaterThan(id, 0));
+                postDTO.setListLiked(postLikeRepository.findListUserIdLiked(id));
+                return postDTO;
             }
         });
         restResponse = new RESTResponse.Success()
@@ -249,10 +258,13 @@ public class PostService {
                     .build();
             return ResponseEntity.badRequest().body(restResponse);
         }
+        PostDTO postDTO = new PostDTO(post);
+        postDTO.setCommentCounts(commentRepository.countByPostIdAndStatusGreaterThan(id, 0));
+        postDTO.setPushCount(pushHistoryRepository.countByPostIdAndStatusGreaterThan(id, 0));
         restResponse = new RESTResponse.Success()
                 .setMessage("Ok")
                 .setStatus(HttpStatus.OK.value())
-                .setData(new PostDTO(post)).build();
+                .setData(postDTO).build(); //cần trả về count
         return ResponseEntity.ok().body(restResponse);
     }
 
@@ -573,7 +585,7 @@ public class PostService {
             restResponse = new RESTResponse.Success()
                     .setMessage("Ok")
                     .setStatus(HttpStatus.OK.value())
-                    .setData(new PostDTO(save)).build();
+                    .setData(new PostDTO(save)).build(); //không cần trả về count
             return ResponseEntity.ok().body(restResponse);
         } catch (Exception exception) {
             restResponse = new RESTResponse.CustomError()
@@ -602,7 +614,7 @@ public class PostService {
             restResponse = new RESTResponse.Success()
                     .setMessage("Ok")
                     .setStatus(HttpStatus.OK.value())
-                    .setData(new PostDTO(save)).build();
+                    .setData(new PostDTO(save)).build(); //không cần trả về count
             return ResponseEntity.ok().body(restResponse);
         } catch (Exception exception) {
             restResponse = new RESTResponse.CustomError()

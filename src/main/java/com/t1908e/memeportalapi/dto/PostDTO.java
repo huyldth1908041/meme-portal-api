@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import javax.validation.constraints.*;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @AllArgsConstructor
@@ -27,6 +29,7 @@ public class PostDTO {
     private int commentCounts;
     private int shareCounts;
     private int pushCount;
+    private List<Long> listLiked;
 
 
     public PostDTO(Post post) {
@@ -40,22 +43,6 @@ public class PostDTO {
         this.updatedAt = post.getUpdatedAt();
         this.category = post.getCategory().getName();
         this.categoryId = post.getCategoryId();
-        this.likeCounts = 0;
-        if (post.getPostLikes() != null) {
-            this.likeCounts = post.getPostLikes().size();
-        }
-        this.commentCounts = 0;
-        if (post.getComments() != null) {
-            this.commentCounts = post.getComments().size();
-        }
-        this.shareCounts = 0;
-        if (post.getPostShares() != null) {
-            this.shareCounts = post.getPostShares().size();
-        }
-        this.pushCount = 0;
-        if (post.getPushHistories() != null) {
-            this.pushCount = post.getPushHistories().size();
-        }
         this.creator = new UserDTO(post.getUser());
     }
 

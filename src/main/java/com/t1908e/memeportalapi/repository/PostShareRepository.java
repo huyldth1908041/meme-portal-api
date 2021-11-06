@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface PostShareRepository extends JpaRepository<PostShare, Integer> {
     List<PostShare> findAllByPostIdAndUserIdOrderByCreatedAtDesc(int postId, long userId);
+
+    int countByPostId(int postId);
 }
