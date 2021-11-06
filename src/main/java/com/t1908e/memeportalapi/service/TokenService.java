@@ -481,7 +481,7 @@ public class TokenService {
             userRepository.save(receiver);
             //save invoice
             Invoice senderInvoice = new Invoice("send token", "transfer token to ".concat(receiver.getFullName()), amount * TAX, sender);
-            Invoice receiverInvoice = new Invoice("receive token", receiver.getFullName().concat(" send token"), amount, receiver);
+            Invoice receiverInvoice = new Invoice("receive token", sender.getFullName().concat(" send token"), amount, receiver);
             invoiceRepository.save(senderInvoice);
             invoiceRepository.save(receiverInvoice);
             //update transaction
