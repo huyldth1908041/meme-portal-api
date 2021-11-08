@@ -150,26 +150,34 @@ public class AdvertisementService {
                     .build();
             return ResponseEntity.badRequest().body(restResponse);
         }
+        boolean needReturnToken = true;
+        List<Advertisement> activeAds = advertisementRepository.findActiveAds();
+        Advertisement activeAd = activeAds.get(0);
+        if(activeAd.getId() == advertisement.getId()) {
+            needReturnToken = false;
+        }
         try {
             advertisement.setStatus(-1);
             advertisement.setUpdatedAt(new Date());
             advertisementRepository.save(advertisement);
-            //return token for user
-            User user = advertisement.getUser();
-            user.addToken(ADVERTISEMENT_PRICE);
-            userRepository.save(user);
-            //save invoice
-            Invoice creatorInvoice = new Invoice("Return token", "advertisement not verified", ADVERTISEMENT_PRICE, user);
-            invoiceRepository.save(creatorInvoice);
-            //send noti
-            //send notification for admin
-            NotificationDTO notificationDTO = new NotificationDTO();
-            notificationDTO.setContent("your advertisement is not verified so we return you 1000 tokens");
-            notificationDTO.setUrl("/token/history");
-            notificationDTO.setStatus(1);
-            notificationDTO.setThumbnail(advertisement.getImage());
-            notificationDTO.setCreatedAt(new Date());
-            FirebaseUtil.sendNotification(user.getAccount().getUsername(), notificationDTO);
+            if(needReturnToken) {
+                //return token for user
+                User user = advertisement.getUser();
+                user.addToken(ADVERTISEMENT_PRICE);
+                userRepository.save(user);
+                //save invoice
+                Invoice creatorInvoice = new Invoice("Return token", "advertisement not verified", ADVERTISEMENT_PRICE, user);
+                invoiceRepository.save(creatorInvoice);
+                //send noti
+                //send notification for admin
+                NotificationDTO notificationDTO = new NotificationDTO();
+                notificationDTO.setContent("your advertisement is not verified so we return you 1000 tokens");
+                notificationDTO.setUrl("/token/history");
+                notificationDTO.setStatus(1);
+                notificationDTO.setThumbnail(advertisement.getImage());
+                notificationDTO.setCreatedAt(new Date());
+                FirebaseUtil.sendNotification(user.getAccount().getUsername(), notificationDTO);
+            }
             restResponse = new RESTResponse.Success()
                     .setMessage("Ads success")
                     .setStatus(HttpStatus.OK.value())
