@@ -143,24 +143,23 @@ public class AdvertisementService {
         HashMap<String, ?> restResponse;
         Optional<Advertisement> byId = advertisementRepository.findById(id);
         Advertisement advertisement = byId.orElse(null);
-        if (advertisement == null || advertisement.getStatus() < 0 || advertisement.getStatus() == 1) {
+        if (advertisement == null || advertisement.getStatus() < 0) {
             restResponse = new RESTResponse.CustomError()
-                    .setMessage("ad not found or has been deleted or not been purchased yet")
+                    .setMessage("ad not found or has been deleted")
                     .setCode(HttpStatus.BAD_REQUEST.value())
                     .build();
             return ResponseEntity.badRequest().body(restResponse);
         }
         boolean needReturnToken = true;
         List<Advertisement> activeAds = advertisementRepository.findActiveAds();
-        Advertisement activeAd = activeAds.get(0);
-        if(activeAd.getId() == advertisement.getId()) {
+        if (!activeAds.isEmpty() && activeAds.get(0).getId() == advertisement.getId()) {
             needReturnToken = false;
         }
         try {
             advertisement.setStatus(-1);
             advertisement.setUpdatedAt(new Date());
             advertisementRepository.save(advertisement);
-            if(needReturnToken) {
+            if (needReturnToken) {
                 //return token for user
                 User user = advertisement.getUser();
                 user.addToken(ADVERTISEMENT_PRICE);
@@ -214,7 +213,7 @@ public class AdvertisementService {
         //return first active ads not expired
         //ads expire time = 1 DAY
         List<Advertisement> activeAds = advertisementRepository.findActiveAds();// 2 active
-        if(activeAds.isEmpty()) {
+        if (activeAds.isEmpty()) {
             restResponse = new RESTResponse.CustomError()
                     .setMessage("No ads is active")
                     .setCode(HttpStatus.NOT_FOUND.value())
@@ -228,6 +227,7 @@ public class AdvertisementService {
                 .setData(new AdvertisementDTO(firstActiveAd)).build();
         return ResponseEntity.ok().body(restResponse);
     }
+
     public ResponseEntity<?> searchListAdvertisement(
             HashMap<String, Object> params,
             Integer page,
