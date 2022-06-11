@@ -100,4 +100,20 @@ public class UserController {
     public ResponseEntity<?> getTotalComment(@PathVariable(value = "id") long id) {
         return userService.getTotalComment(id);
     }
+
+    @RequestMapping(value = "/profile", method = RequestMethod.GET)
+    public ResponseEntity<?> profile(@RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(new RESTResponse
+                    .CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("Required token in header")
+                    .build());
+        }
+
+        String accessToken = token.replace("Bearer", "").trim();
+        DecodedJWT decodedJWT = JwtUtil.getDecodedJwt(accessToken);
+        String username = decodedJWT.getSubject();
+        return userService.getUserProfile(username);
+    }
 }

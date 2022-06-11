@@ -267,4 +267,27 @@ public class UserService {
                 .setData(count).build();
         return ResponseEntity.ok().body(restResponse);
     }
+
+    public ResponseEntity<?> getUserProfile(String username) {
+        HashMap<String, Object> restResponse = new HashMap<>();
+        User user = authenticationService.getAppUser(username);
+        if (user == null) {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.NOT_FOUND.value())
+                    .setMessage("user not found").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        if (user.getStatus() < 0) {
+            restResponse = new RESTResponse.CustomError()
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .setMessage("user is de-active").build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        restResponse = new RESTResponse.Success()
+                .setMessage("OK")
+                .setStatus(HttpStatus.OK.value())
+                .setData(new UserDTO(user)).build();
+
+        return ResponseEntity.ok().body(restResponse);
+    }
 }
