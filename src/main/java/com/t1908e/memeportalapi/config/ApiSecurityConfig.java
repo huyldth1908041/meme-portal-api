@@ -42,12 +42,11 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests()
                 .antMatchers("/api/v1/register**", "/api/v1/register/*",
                         "/api/v1/login**", "/api/v1/login/*",
-                        "/api/v1/token/refresh**", "/api/v1/token/refresh/*",
-                        "/api/v1/categories**", "/api/v1/categories/*")
+                        "/api/v1/token/refresh**", "/api/v1/token/refresh/*")
                 .permitAll();
         http.authorizeRequests()
                 .antMatchers(HttpMethod.GET, "/api/v1/posts/**", "/api/v1/users/**", "/api/v1/posts**",
-                        "/api/v1/advertisements/active**")
+                        "/api/v1/advertisements/active**", "/api/v1/categories**", "/api/v1/categories/*")
                 .permitAll();
         http.authorizeRequests().antMatchers("/api/v1/posts/verify",
                 "/api/v1/posts/verify/*").hasAnyAuthority("admin");
@@ -62,7 +61,7 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
                 .hasAnyAuthority("admin");
         http.authorizeRequests()
                 .antMatchers(HttpMethod.POST,
-                        "/api/v1/posts/**", "/api/v1/posts*")
+                        "/api/v1/posts/**", "/api/v1/posts*", "/api/v1/categories/**", "/api/v1/categories*")
                 .hasAnyAuthority("user", "admin");
         //add requests path for more role here
         http.authorizeRequests().antMatchers("/api/v1/tokens/**", "/api/v1/tokens*",
