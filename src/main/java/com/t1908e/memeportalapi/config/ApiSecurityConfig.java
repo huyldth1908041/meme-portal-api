@@ -57,7 +57,8 @@ public class ApiSecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests().antMatchers(HttpMethod.PUT, "/api/v1/posts**",
                 "/api/v1/posts/**",
                 "/api/v1/posts/{id}/makeNew/**", "/api/v1/posts/{id}/makeNew**",
-                "/api/v1/posts/{id}/makeHot/**", "/api/v1/posts/{id}/makeHot**")
+                "/api/v1/posts/{id}/makeHot/**", "/api/v1/posts/{id}/makeHot**"
+                , "/api/v1/tokens/giveToken/**", "/api/v1/tokens/giveToken**")
                 .hasAnyAuthority("admin");
         http.authorizeRequests()
                 .antMatchers(HttpMethod.POST,

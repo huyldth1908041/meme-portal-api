@@ -34,6 +34,8 @@ public class PostService {
     private final PushHistoryRepository pushHistoryRepository;
     private final CommentRepository commentRepository;
     private final PostShareRepository postShareRepository;
+    private final RoleRepository roleRepository;
+    private final AccountRepository accountRepository;
 
     public ResponseEntity<?> savePost(PostDTO.CreatePostDTO postDTO, String creatorUsername) {
         HashMap<String, Object> restResponse = new HashMap<>();
@@ -75,13 +77,33 @@ public class PostService {
         try {
             Post savedPost = postRepository.save(newPost);
             if (savedPost.getStatus() == 0) {
-                NotificationDTO notification = new NotificationDTO();
-                notification.setContent("You have new post to verify");
-                notification.setThumbnail(savedPost.getImage());
-                notification.setStatus(1);
-                notification.setCreatedAt(new Date());
-                notification.setUrl("/post/".concat(String.valueOf(savedPost.getId())));
-                FirebaseUtil.sendNotification("admin@admin.com", notification);
+                //send notification to all admin
+                //get admin role
+                Optional<Role> admin = roleRepository.findByName("admin");
+                if(!admin.isPresent()) {
+                    restResponse = new RESTResponse.CustomError()
+                            .setCode(HttpStatus.BAD_REQUEST.value())
+                            .setMessage("Not found admin role for push notification").build();
+                    return ResponseEntity.badRequest().body(restResponse);
+                }
+                List<Account> listAdmins = accountRepository.findAllByRoleId(admin.get().getId());
+                if(listAdmins.size() == 0) {
+                    restResponse = new RESTResponse.CustomError()
+                            .setCode(HttpStatus.BAD_REQUEST.value())
+                            .setMessage("Not found any admin in system for push notification").build();
+                    return ResponseEntity.badRequest().body(restResponse);
+                }
+                for (int i = 0; i < listAdmins.size(); i++) {
+                    Account adminAccount = listAdmins.get(i);
+                    NotificationDTO notification = new NotificationDTO();
+                    notification.setContent("You have new post to verify");
+                    notification.setThumbnail(savedPost.getImage());
+                    notification.setStatus(1);
+                    notification.setCreatedAt(new Date());
+                    notification.setUrl("/post/".concat(String.valueOf(savedPost.getId())));
+                    FirebaseUtil.sendNotification(adminAccount.getUsername(), notification);
+                }
+
             }
             restResponse = new RESTResponse.Success()
                     .setMessage("success")

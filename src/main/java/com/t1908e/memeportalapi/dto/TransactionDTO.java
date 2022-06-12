@@ -57,4 +57,14 @@ public class TransactionDTO {
         @NotBlank(message = "verify code is required")
         private String verifyCode;
     }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    public static class GiveTokenDTO {
+        @NotNull(message = "userId is required")
+        private long userId;
+        @NotNull(message = "amount is required")
+        private double amount;
+    }
 }

@@ -511,4 +511,47 @@ public class TokenService {
         }
 
     }
+
+    public ResponseEntity<?> giveToken(long userId, double amount) {
+        HashMap<String, Object> restResponse;
+        Optional<User> userOptional = userRepository.findById(userId);
+        if(!userOptional.isPresent()) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage("sender not found or has been deleted")
+                    .setCode(HttpStatus.BAD_REQUEST.value())
+                    .build();
+            return ResponseEntity.badRequest().body(restResponse);
+        }
+        try {
+            User user = userOptional.get();
+            user.addToken(amount);
+            userRepository.save(user);
+
+            Invoice invoice = new Invoice("receive token", "Admin give token", amount, user);
+            invoiceRepository.save(invoice);
+
+            //send notification
+            NotificationDTO notificationDTO = new NotificationDTO();
+            notificationDTO.setContent("Admin has sent to you ".concat(String.valueOf(amount)).concat(" tokens"));
+            notificationDTO.setUrl("/token/history");
+            notificationDTO.setStatus(1);
+            notificationDTO.setThumbnail(user.getAvatar());
+            notificationDTO.setCreatedAt(new Date());
+            FirebaseUtil.sendNotification(user.getAccount().getUsername(), notificationDTO);
+
+            restResponse = new RESTResponse.Success()
+                    .setMessage("transfer success")
+                    .setStatus(HttpStatus.OK.value())
+                    .setData(new InvoiceDTO(invoice)).build();
+            return ResponseEntity.ok().body(restResponse);
+
+        }catch (Exception err) {
+            restResponse = new RESTResponse.CustomError()
+                    .setMessage(err.getMessage())
+                    .setCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .build();
+            return ResponseEntity.internalServerError().body(restResponse);
+        }
+
+    }
 }

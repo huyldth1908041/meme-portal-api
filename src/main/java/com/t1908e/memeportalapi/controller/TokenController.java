@@ -130,4 +130,16 @@ public class TokenController {
         return tokenService.processTransaction(username, processTransactionDTO.getVerifyCode(), processTransactionDTO.getTxId());
     }
 
+
+    @RequestMapping(value = "/giveToken", method = RequestMethod.PUT)
+    public ResponseEntity<?> transferToken(
+            @Valid @RequestBody TransactionDTO.GiveTokenDTO dto,
+            BindingResult bindingResult
+    ) {
+        if(bindingResult.hasErrors()) {
+            return RESTUtil.getValidationErrorsResponse(bindingResult, "process tx failed");
+        }
+        return tokenService.giveToken(dto.getUserId(), dto.getAmount());
+    }
+
 }
